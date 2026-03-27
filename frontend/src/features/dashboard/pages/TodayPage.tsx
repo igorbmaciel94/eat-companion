@@ -43,14 +43,19 @@ export function TodayPage() {
   // Auto-load active plan if localStorage was cleared
   const setActiveMealPlanId = useUiStore((s) => s.setActiveMealPlanId);
   useEffect(() => {
+    console.log('[TodayPage] auto-load check:', { isAuthenticated, activePlanId });
     if (!isAuthenticated || activePlanId) return;
     const loadLatestPlan = async () => {
       try {
+        console.log('[TodayPage] fetching meal plans...');
         const { data } = await mealPlansApi.list();
+        console.log('[TodayPage] meal plans response:', data);
         if (data?.length) {
           setActiveMealPlanId(data[0].id);
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error('[TodayPage] failed to load plans:', err);
+      }
     };
     loadLatestPlan();
   }, [isAuthenticated, activePlanId, setActiveMealPlanId]);

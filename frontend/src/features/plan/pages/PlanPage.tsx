@@ -87,14 +87,19 @@ export function PlanPage() {
 
   // Auto-load active plan if localStorage was cleared
   useEffect(() => {
+    console.log('[PlanPage] auto-load check:', { isAuthenticated, activePlanId });
     if (!isAuthenticated || activePlanId) return;
     const loadLatestPlan = async () => {
       try {
+        console.log('[PlanPage] fetching meal plans...');
         const { data } = await mealPlansApi.list();
+        console.log('[PlanPage] meal plans response:', data);
         if (data?.length) {
           setActiveMealPlanId(data[0].id);
         }
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error('[PlanPage] failed to load plans:', err);
+      }
     };
     loadLatestPlan();
   }, [isAuthenticated, activePlanId, setActiveMealPlanId]);
