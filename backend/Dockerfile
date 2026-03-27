@@ -7,6 +7,8 @@ COPY src/EatCompanion.Domain/EatCompanion.Domain.csproj src/EatCompanion.Domain/
 COPY src/EatCompanion.Application/EatCompanion.Application.csproj src/EatCompanion.Application/
 COPY src/EatCompanion.Infrastructure/EatCompanion.Infrastructure.csproj src/EatCompanion.Infrastructure/
 COPY src/EatCompanion.Api/EatCompanion.Api.csproj src/EatCompanion.Api/
+COPY tests/EatCompanion.Domain.Tests/EatCompanion.Domain.Tests.csproj tests/EatCompanion.Domain.Tests/
+COPY tests/EatCompanion.Infrastructure.Tests/EatCompanion.Infrastructure.Tests.csproj tests/EatCompanion.Infrastructure.Tests/
 RUN dotnet restore
 
 # Copy everything and publish
