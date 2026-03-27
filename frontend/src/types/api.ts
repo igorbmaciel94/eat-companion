@@ -19,6 +19,8 @@ export interface AuthResponse {
     displayName: string;
     calorieTarget?: number;
     goalType?: number;
+    heightCm?: number;
+    weightKg?: number;
     createdAt: string;
   };
 }

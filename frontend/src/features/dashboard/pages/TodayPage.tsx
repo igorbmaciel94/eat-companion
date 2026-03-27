@@ -64,7 +64,7 @@ export function TodayPage() {
             const bO = mealOrder[b.mealType ?? 0] ?? 99;
             return aO - bO;
           });
-          const apiMeals: Meal[] = sorted.map((m: { id: string; type?: string; mealType?: number; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
+          const apiMeals: Meal[] = sorted.map((m: { id: string; type?: string; mealType?: number | string; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
             return {
               type: MEALTYPE_LABELS[m.mealType ?? 0] || m.type || 'Meal',
