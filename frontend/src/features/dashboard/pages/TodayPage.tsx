@@ -40,6 +40,21 @@ export function TodayPage() {
   const CALORIE_TARGET = user?.calorieTarget || 2200;
   const PROTEIN_TARGET = 120;
 
+  // Auto-load active plan if localStorage was cleared
+  const setActiveMealPlanId = useUiStore((s) => s.setActiveMealPlanId);
+  useEffect(() => {
+    if (!isAuthenticated || activePlanId) return;
+    const loadLatestPlan = async () => {
+      try {
+        const { data } = await mealPlansApi.list();
+        if (data?.length) {
+          setActiveMealPlanId(data[0].id);
+        }
+      } catch { /* ignore */ }
+    };
+    loadLatestPlan();
+  }, [isAuthenticated, activePlanId, setActiveMealPlanId]);
+
   useEffect(() => {
     if (!isAuthenticated || !activePlanId) return;
 

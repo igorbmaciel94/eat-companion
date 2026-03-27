@@ -79,10 +79,25 @@ export function PlanPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('today');
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
+  const setActiveMealPlanId = useUiStore((s) => s.setActiveMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Auto-load active plan if localStorage was cleared
+  useEffect(() => {
+    if (!isAuthenticated || activePlanId) return;
+    const loadLatestPlan = async () => {
+      try {
+        const { data } = await mealPlansApi.list();
+        if (data?.length) {
+          setActiveMealPlanId(data[0].id);
+        }
+      } catch { /* ignore */ }
+    };
+    loadLatestPlan();
+  }, [isAuthenticated, activePlanId, setActiveMealPlanId]);
   const [selectingOption, setSelectingOption] = useState<string | null>(null);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>({ name: '', calories: 0, protein: 0, carbs: 0, fat: 0 });
