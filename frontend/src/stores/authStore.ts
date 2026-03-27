@@ -67,6 +67,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        // Normalize goalType loaded from localStorage (may be string from backend)
+        if (state?.user && state.user.goalType !== undefined) {
+          state.user.goalType = normalizeGoalType(state.user.goalType);
+        }
+      },
     }
   )
 );

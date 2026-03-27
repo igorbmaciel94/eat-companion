@@ -4,6 +4,7 @@ import { Icon } from '../../../components/ui/Icon';
 import { Button } from '../../../components/ui/Button';
 import { useAuthStore } from '../../../stores/authStore';
 import { profileApi } from '../../../api/profile';
+import { normalizeGoalType } from '../../../utils/goalType';
 
 const GOAL_OPTIONS = [
   { value: 0, label: 'Lose Weight', icon: 'monitor_weight' },
@@ -31,7 +32,8 @@ export function ProfilePage() {
   const email = user?.email;
   const calorieTarget = user?.calorieTarget || 2000;
   const goalLabels: Record<number, string> = { 0: 'Lose Weight', 1: 'Eat Better', 2: 'Build Muscle' };
-  const focusLabel = typeof user?.goalType === 'number' ? goalLabels[user.goalType] || 'Not set' : 'Not set';
+  const normalizedGoal = normalizeGoalType(user?.goalType);
+  const focusLabel = normalizedGoal !== undefined ? goalLabels[normalizedGoal] || 'Not set' : 'Not set';
 
   const handleLogout = () => {
     logout();
@@ -227,7 +229,7 @@ export function ProfilePage() {
             {editingGoal && (
               <div className="px-4 pb-4 space-y-2">
                 {GOAL_OPTIONS.map((option) => {
-                  const isSelected = user?.goalType === option.value;
+                  const isSelected = normalizedGoal === option.value;
                   return (
                     <button
                       key={option.value}
