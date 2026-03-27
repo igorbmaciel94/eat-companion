@@ -9,8 +9,10 @@ export function ProfilePage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
 
-  const displayName = user?.displayName || 'Elena Rodriguez';
-  const calorieTarget = user?.calorieTarget || 2200;
+  const displayName = user?.displayName || 'User';
+  const calorieTarget = user?.calorieTarget || 2000;
+  const goalLabels: Record<number, string> = { 0: 'Lose Weight', 1: 'Eat Better', 2: 'Build Muscle' };
+  const focusLabel = typeof user?.goalType === 'number' ? goalLabels[user.goalType] || 'Not set' : 'Not set';
 
   const handleLogout = () => {
     logout();
@@ -30,9 +32,7 @@ export function ProfilePage() {
             <h1 className="font-headline font-bold text-on-surface text-xl">
               {displayName}
             </h1>
-            <p className="text-on-surface-variant text-sm">
-              {isAuthenticated ? 'Premium Member' : 'Guest'}
-            </p>
+            <p className="text-on-surface-variant text-sm">Member</p>
           </div>
           <span className="inline-flex items-center bg-primary-container text-on-primary-container text-xs font-label font-medium px-2.5 py-1 rounded-full">
             Active
@@ -48,7 +48,7 @@ export function ProfilePage() {
                 Streak
               </span>
             </div>
-            <p className="font-headline font-bold text-on-surface text-lg">14 Days</p>
+            <p className="font-headline font-bold text-on-surface text-lg">—</p>
           </div>
           <div className="bg-surface-container-low rounded-xl p-3 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -58,7 +58,7 @@ export function ProfilePage() {
               </span>
             </div>
             <p className="font-headline font-bold text-on-surface text-lg leading-tight">
-              Mindful Eating
+              {focusLabel}
             </p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function ProfilePage() {
               <p className="font-headline font-medium text-on-surface text-sm">
                 Dietary Patterns
               </p>
-              <p className="text-on-surface-variant text-xs mt-0.5">Mediterranean</p>
+              <p className="text-on-surface-variant text-xs mt-0.5">Not set</p>
             </div>
             <Icon name="chevron_right" size={20} className="text-on-surface-variant" />
           </button>
@@ -94,7 +94,7 @@ export function ProfilePage() {
               <p className="font-headline font-medium text-on-surface text-sm">
                 Notifications
               </p>
-              <p className="text-on-surface-variant text-xs mt-0.5">Meal reminders enabled</p>
+              <p className="text-on-surface-variant text-xs mt-0.5">Not configured</p>
             </div>
             <Icon name="chevron_right" size={20} className="text-on-surface-variant" />
           </button>

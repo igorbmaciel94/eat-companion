@@ -11,6 +11,20 @@ const categoryColors: Record<string, string> = {
 export function GroceryListPage() {
   const { data, checkedItems, toggleItem } = useGroceryList();
 
+  if (data.totalItems === 0) {
+    return (
+      <div className="py-2 flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-6">
+          <Icon name="shopping_basket" size={40} className="text-primary" />
+        </div>
+        <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">No grocery list yet</h2>
+        <p className="text-on-surface-variant text-base mb-8">
+          Import a meal plan first to generate your grocery list.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="py-2">
       {/* Header */}

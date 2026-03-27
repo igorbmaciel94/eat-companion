@@ -22,33 +22,13 @@ interface AnalyticsData {
   averageDailyCalories: number;
 }
 
-const mockAdherenceData: AdherenceDataPoint[] = [
-  { day: 'Mon', value: 100, fill: '#9ff2e4' },
-  { day: 'Tue', value: 80, fill: '#016b61' },
-  { day: 'Wed', value: 90, fill: '#9ff2e4' },
-  { day: 'Thu', value: 70, fill: '#016b61' },
-  { day: 'Fri', value: 95, fill: '#9ff2e4' },
-  { day: 'Sat', value: 60, fill: '#016b61' },
-  { day: 'Sun', value: 85, fill: '#9ff2e4' },
-];
-
-const mockWeightData: WeightDataPoint[] = [
-  { day: 'Mon', weight: 73.2 },
-  { day: 'Tue', weight: 73.0 },
-  { day: 'Wed', weight: 72.8 },
-  { day: 'Thu', weight: 72.9 },
-  { day: 'Fri', weight: 72.6 },
-  { day: 'Sat', weight: 72.5 },
-  { day: 'Sun', weight: 72.4 },
-];
-
 const FILL_COLORS = ['#9ff2e4', '#016b61'];
 
 export function useAnalytics(): AnalyticsData {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [adherenceData, setAdherenceData] = useState<AdherenceDataPoint[]>(mockAdherenceData);
-  const [weightData, setWeightData] = useState<WeightDataPoint[]>(mockWeightData);
-  const [averageDailyCalories, setAverageDailyCalories] = useState(1820);
+  const [adherenceData, setAdherenceData] = useState<AdherenceDataPoint[]>([]);
+  const [weightData, setWeightData] = useState<WeightDataPoint[]>([]);
+  const [averageDailyCalories, setAverageDailyCalories] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -60,28 +40,42 @@ export function useAnalytics(): AnalyticsData {
           analyticsApi.getWeightTrend(3),
         ]);
 
-        // Map adherence data
-        if (adherenceRes.data?.dailyBreakdown && adherenceRes.data.dailyBreakdown.length > 0) {
+        // Map adherence data from List<WeeklyAnalyticsDto>
+        // Backend returns array of weekly summaries with dailySummaries inside
+        const weeks = adherenceRes.data;
+        if (Array.isArray(weeks) && weeks.length > 0) {
+          // Use the most recent week's data for the bar chart
+          const recentWeek = weeks[0];
           const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const mapped: AdherenceDataPoint[] = adherenceRes.data.dailyBreakdown.slice(-7).map(
-            (d: { date: string; mealsLogged: number; mealsPlanned: number; calories: number }, i: number) => {
-              const date = new Date(d.date + 'T00:00:00');
-              const adherence = d.mealsPlanned > 0 ? Math.round((d.mealsLogged / d.mealsPlanned) * 100) : 0;
-              return {
-                day: dayNames[date.getDay()],
-                value: adherence,
-                fill: FILL_COLORS[i % 2],
-              };
-            },
-          );
-          if (mapped.length > 0) setAdherenceData(mapped);
 
-          // Avg calories
-          const totalCal = adherenceRes.data.dailyBreakdown.reduce(
-            (sum: number, d: { calories: number }) => sum + d.calories, 0,
-          );
-          if (adherenceRes.data.dailyBreakdown.length > 0) {
-            setAverageDailyCalories(Math.round(totalCal / adherenceRes.data.dailyBreakdown.length));
+          // If dailySummaries are populated, use them
+          if (recentWeek.dailySummaries && recentWeek.dailySummaries.length > 0) {
+            const mapped: AdherenceDataPoint[] = recentWeek.dailySummaries.map(
+              (d: { date: string; caloriesConsumed: number }, i: number) => {
+                const date = new Date(d.date + 'T00:00:00');
+                return {
+                  day: dayNames[date.getDay()],
+                  value: d.caloriesConsumed > 0 ? 100 : 0,
+                  fill: FILL_COLORS[i % 2],
+                };
+              },
+            );
+            if (mapped.length > 0) setAdherenceData(mapped);
+
+            const totalCal = recentWeek.dailySummaries.reduce(
+              (sum: number, d: { caloriesConsumed: number }) => sum + d.caloriesConsumed, 0,
+            );
+            setAverageDailyCalories(Math.round(totalCal / recentWeek.dailySummaries.length));
+          } else {
+            // Fallback: create a single bar from the weekly summary
+            const total = recentWeek.mealsCompleted + recentWeek.mealsSkipped + recentWeek.mealsSubstituted;
+            const adherence = total > 0 ? Math.round((recentWeek.mealsCompleted / total) * 100) : 0;
+            if (total > 0) {
+              setAdherenceData([{ day: 'This Week', value: adherence, fill: FILL_COLORS[0] }]);
+            }
+            if (recentWeek.averageCalories > 0) {
+              setAverageDailyCalories(recentWeek.averageCalories);
+            }
           }
         }
 
@@ -107,12 +101,14 @@ export function useAnalytics(): AnalyticsData {
     fetchAnalytics();
   }, [isAuthenticated]);
 
-  const averageAdherence = Math.round(
-    adherenceData.reduce((sum, d) => sum + d.value, 0) / adherenceData.length,
-  );
+  const averageAdherence = adherenceData.length > 0
+    ? Math.round(adherenceData.reduce((sum, d) => sum + d.value, 0) / adherenceData.length)
+    : 0;
 
-  const currentWeight = weightData[weightData.length - 1].weight;
-  const weeklyWeightChange = +(currentWeight - weightData[0].weight).toFixed(1);
+  const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].weight : 0;
+  const weeklyWeightChange = weightData.length > 1
+    ? +(currentWeight - weightData[0].weight).toFixed(1)
+    : 0;
 
   return {
     adherenceData,

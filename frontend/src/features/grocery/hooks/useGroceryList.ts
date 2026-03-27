@@ -16,58 +16,16 @@ interface GroceryListData {
   listId?: string;
 }
 
-const mockData: GroceryListData = {
-  totalItems: 24,
-  consolidationDays: 3,
-  dateRange: 'Oct 24 — Oct 26',
-  categories: [
-    {
-      name: 'Produce',
-      items: [
-        { id: 'p1', name: 'Organic Baby Spinach' },
-        { id: 'p2', name: 'Avocados' },
-        { id: 'p3', name: 'Blueberries' },
-        { id: 'p4', name: 'Mixed Greens' },
-        { id: 'p5', name: 'Tomatoes' },
-        { id: 'p6', name: 'Lemons' },
-        { id: 'p7', name: 'Bananas' },
-        { id: 'p8', name: 'Berries' },
-      ],
-    },
-    {
-      name: 'Protein',
-      items: [
-        { id: 'pr1', name: 'Chicken Breast' },
-        { id: 'pr2', name: 'Salmon Fillet' },
-        { id: 'pr3', name: 'Eggs (dozen)' },
-        { id: 'pr4', name: 'Greek Yogurt' },
-      ],
-    },
-    {
-      name: 'Dairy',
-      items: [
-        { id: 'd1', name: 'Edam Cheese' },
-        { id: 'd2', name: 'Cottage Cheese' },
-        { id: 'd3', name: 'Protein Yogurt' },
-        { id: 'd4', name: 'Low-fat Milk' },
-      ],
-    },
-    {
-      name: 'Grains',
-      items: [
-        { id: 'g1', name: 'Bread (whole grain)' },
-        { id: 'g2', name: 'Rice' },
-        { id: 'g3', name: 'Oat Flakes' },
-        { id: 'g4', name: 'Pasta' },
-        { id: 'g5', name: 'Corn Cakes' },
-      ],
-    },
-  ],
+const emptyData: GroceryListData = {
+  totalItems: 0,
+  consolidationDays: 0,
+  dateRange: '',
+  categories: [],
 };
 
 export function useGroceryList() {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-  const [data, setData] = useState<GroceryListData>(mockData);
+  const [data, setData] = useState<GroceryListData>(emptyData);
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 

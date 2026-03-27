@@ -23,41 +23,71 @@ public class GetWeeklyAdherenceQueryHandler
     {
         var results = new List<WeeklyAnalyticsDto>();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var plans = await _mealPlanRepository.GetByUserIdAsync(query.UserId);
 
         for (int i = 0; i < query.Weeks; i++)
         {
             var weekEnd = today.AddDays(-7 * i);
             var weekStart = weekEnd.AddDays(-6);
 
-            var plans = await _mealPlanRepository.GetByUserIdAsync(query.UserId);
-            var plannedMeals = plans
-                .SelectMany(p => p.Days)
-                .Where(d => d.Date >= weekStart && d.Date <= weekEnd)
-                .SelectMany(d => d.Meals)
-                .Count();
-
             var logs = await _mealLogRepository.GetByUserAndDateRangeAsync(query.UserId, weekStart, weekEnd);
             var loggedMeals = logs.Count(l => l.Status == MealLogStatus.Completed);
-
-            var adherence = plannedMeals > 0
-                ? Math.Round((decimal)loggedMeals / plannedMeals * 100, 1)
-                : 0;
-
-            var completedLogs = logs.Where(l => l.Status == MealLogStatus.Completed).ToList();
             var skippedCount = logs.Count(l => l.Status == MealLogStatus.Skipped);
             var substitutedCount = logs.Count(l => l.Status == MealLogStatus.Substituted);
+
+            // Build daily summaries
+            var dailySummaries = new List<DailySummaryDto>();
+            for (var date = weekStart; date <= weekEnd; date = date.AddDays(1))
+            {
+                var dayLogs = logs.Where(l => l.Date == date).ToList();
+                var completedDayLogs = dayLogs.Where(l => l.Status == MealLogStatus.Completed).ToList();
+
+                // Sum calories from completed meal options
+                var caloriesConsumed = 0;
+                decimal proteinConsumed = 0, carbsConsumed = 0, fatConsumed = 0;
+                foreach (var log in completedDayLogs)
+                {
+                    if (log.MealOptionId == null) continue;
+                    var option = plans
+                        .SelectMany(p => p.Days)
+                        .SelectMany(d => d.Meals)
+                        .SelectMany(m => m.Options)
+                        .FirstOrDefault(o => o.Id == log.MealOptionId);
+                    if (option != null)
+                    {
+                        caloriesConsumed += option.Calories ?? 0;
+                        proteinConsumed += option.ProteinGrams ?? 0;
+                        carbsConsumed += option.CarbsGrams ?? 0;
+                        fatConsumed += option.FatGrams ?? 0;
+                    }
+                }
+
+                dailySummaries.Add(new DailySummaryDto(
+                    date,
+                    2000, // default target
+                    caloriesConsumed,
+                    proteinConsumed,
+                    carbsConsumed,
+                    fatConsumed,
+                    new List<MealDto>()
+                ));
+            }
+
+            var totalCalories = dailySummaries.Sum(d => d.CaloriesConsumed);
+            var daysWithData = dailySummaries.Count(d => d.CaloriesConsumed > 0);
+            var avgCalories = daysWithData > 0 ? totalCalories / daysWithData : 0;
 
             results.Add(new WeeklyAnalyticsDto(
                 weekStart,
                 weekEnd,
-                plannedMeals > 0 ? (int)Math.Round((decimal)completedLogs.Count / plannedMeals * 2000) : 0,
-                0m,
-                0m,
-                0m,
+                avgCalories,
+                dailySummaries.Sum(d => d.ProteinConsumed) / Math.Max(daysWithData, 1),
+                dailySummaries.Sum(d => d.CarbsConsumed) / Math.Max(daysWithData, 1),
+                dailySummaries.Sum(d => d.FatConsumed) / Math.Max(daysWithData, 1),
                 loggedMeals,
                 skippedCount,
                 substitutedCount,
-                new List<DailySummaryDto>()
+                dailySummaries
             ));
         }
 

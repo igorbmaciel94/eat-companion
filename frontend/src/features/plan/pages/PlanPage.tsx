@@ -15,31 +15,6 @@ interface PlanMeal {
   imageUrl?: string;
 }
 
-const mockMeals: PlanMeal[] = [
-  {
-    type: 'Breakfast',
-    name: 'Avocado Toast with Poached Eggs',
-    calories: 380,
-    protein: 18,
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAP6iNvLxkxyoSS9b0kpeQgIozTTTQ_HuEmwzUCJGLGx0W0nOzzCI_us9_8UG-5Yeay6WoxVD3sXec2TXfBnaxjGv5cj8dRqrjbtkr0qa8UVkrJV9FhP4QUrzXgxMS1KBVSC4SGlRmpxN3y29QODKw9QwN6m9UplhksXWs2wvboQFFWOFsz64-Y2_89dusSSyY3SOyYDnqvMVVI8i1asM4HWqu-13dFeWNETo2Dnn-K9NDLfDug0m5gu7f1m-tEEbw9lz1BSIxCWPsO',
-  },
-  {
-    type: 'Lunch',
-    name: 'Garden Quinoa Bowl',
-    calories: 520,
-    protein: 24,
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDgDQSGe_ySpC4yS3ntEY5XiQmUVaMsuCCXVIzIrTzXGBYcDrGyM7YorM0UVB0L40mNdcruPxwLLELTuDPq4k18zmApAJMgFuda5EkUShN5Dm7liPgqgjKqAI_r-YmflIk5zL2kPbdD2-iTd-_t25wrzgYd32q_-kSvF-6pkUzgxMEsHXeu1USLbK-h3PoYtWuhLvQbfKYdrVLCRWOutX_xE0CHWHB9VnwxxT4QtYk1BKFkI7sU1RcZd0oxf9Cvildhdcvqbt3mhdvr',
-  },
-  {
-    type: 'Dinner',
-    name: 'Grilled Salmon with Vegetables',
-    calories: 480,
-    protein: 35,
-  },
-];
-
 const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
 export function PlanPage() {
@@ -48,7 +23,7 @@ export function PlanPage() {
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const [meals, setMeals] = useState<PlanMeal[]>(mockMeals);
+  const [meals, setMeals] = useState<PlanMeal[]>([]);
   const [loading, setLoading] = useState(false);
 
   const CALORIE_TARGET = user?.calorieTarget || 2200;
@@ -101,6 +76,27 @@ export function PlanPage() {
     );
   }
 
+  if (!activePlanId) {
+    return (
+      <div className="py-2 flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-6">
+          <Icon name="restaurant_menu" size={40} className="text-primary" />
+        </div>
+        <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">No meal plan yet</h2>
+        <p className="text-on-surface-variant text-base mb-8">
+          Import your nutritionist's PDF to get started with personalized meal planning.
+        </p>
+        <button
+          onClick={() => navigate('/plan/import')}
+          className="flex items-center gap-2 bg-primary text-on-primary rounded-full px-6 py-3 font-medium text-sm"
+        >
+          <Icon name="upload_file" size={18} />
+          Import meal plan PDF
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="py-2">
       {/* Toggle pills */}
@@ -147,6 +143,12 @@ export function PlanPage() {
       </div>
 
       {/* Meal cards */}
+      {meals.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Icon name="calendar_today" size={32} className="text-on-surface-variant/40 mb-3" />
+          <p className="text-on-surface-variant text-sm">No meals planned for today.</p>
+        </div>
+      )}
       <div className="space-y-3 mb-6">
         {meals.map((meal, idx) => (
           <div
