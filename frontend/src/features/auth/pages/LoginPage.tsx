@@ -19,7 +19,8 @@ export function LoginPage() {
     try {
       const { data } = await authApi.login({ email, password });
       useAuthStore.getState().login(data);
-      navigate('/');
+      const onboardingCompleted = useAuthStore.getState().onboardingCompleted;
+      navigate(onboardingCompleted ? '/' : '/welcome');
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } };
       setError(axiosErr.response?.data?.detail || 'Login failed');

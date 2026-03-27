@@ -39,6 +39,13 @@ function RedirectIfAuth() {
   return <Outlet />;
 }
 
+/** Redirects to / if user already completed onboarding */
+function RequireOnboarding() {
+  const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
+  if (onboardingCompleted) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -52,10 +59,12 @@ export function AppRoutes() {
 
       {/* Protected routes — redirect to /login if not authenticated */}
       <Route element={<RequireAuth />}>
-        {/* Onboarding */}
-        <Route element={<OnboardingLayout />}>
-          <Route path="/welcome" element={<SuspenseWrapper><WelcomePage /></SuspenseWrapper>} />
-          <Route path="/goals" element={<SuspenseWrapper><GoalSelectionPage /></SuspenseWrapper>} />
+        {/* Onboarding — skip if already completed */}
+        <Route element={<RequireOnboarding />}>
+          <Route element={<OnboardingLayout />}>
+            <Route path="/welcome" element={<SuspenseWrapper><WelcomePage /></SuspenseWrapper>} />
+            <Route path="/goals" element={<SuspenseWrapper><GoalSelectionPage /></SuspenseWrapper>} />
+          </Route>
         </Route>
 
         {/* App routes with bottom nav */}

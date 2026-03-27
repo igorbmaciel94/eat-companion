@@ -7,10 +7,12 @@ interface AuthState {
   refreshToken: string | null;
   user: UserProfile | null;
   isAuthenticated: boolean;
+  onboardingCompleted: boolean;
   login: (response: AuthResponse) => void;
   logout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
+  setOnboardingCompleted: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -20,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       isAuthenticated: false,
+      onboardingCompleted: false,
       login: (response: AuthResponse) =>
         set({
           accessToken: response.accessToken,
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
           isAuthenticated: false,
+          onboardingCompleted: false,
         }),
       setTokens: (accessToken: string, refreshToken: string) =>
         set({ accessToken, refreshToken }),
@@ -47,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           user: state.user ? { ...state.user, ...updates } : null,
         })),
+      setOnboardingCompleted: () => set({ onboardingCompleted: true }),
     }),
     {
       name: 'auth-storage',
