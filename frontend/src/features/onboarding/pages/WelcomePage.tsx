@@ -18,14 +18,14 @@ export function WelcomePage() {
       {/* Badge */}
       <div className="mb-4">
         <span className="inline-block bg-primary-container text-on-primary-container text-xs font-label font-medium px-3 py-1 rounded-full">
-          Mindful Beginnings
+          Get Started
         </span>
       </div>
 
       {/* Headline */}
       <h1 className="text-3xl font-headline font-bold tracking-tight text-on-surface mb-3">
         Welcome to your{' '}
-        <span className="italic text-primary">mindful kitchen.</span>
+        <span className="italic text-primary">Eat Companion.</span>
       </h1>
 
       {/* Subtitle */}

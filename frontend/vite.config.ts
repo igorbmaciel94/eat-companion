@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'The Atrium - Mindful Kitchen',
-        short_name: 'The Atrium',
+        name: 'Eat Companion',
+        short_name: 'Eat Companion',
         theme_color: '#016b61',
         background_color: '#f6faf8',
         display: 'standalone',
