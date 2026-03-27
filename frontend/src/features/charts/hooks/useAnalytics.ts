@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { analyticsApi } from '../../../api/analytics';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -24,11 +24,18 @@ interface AnalyticsData {
 
 const FILL_COLORS = ['#9ff2e4', '#016b61'];
 
-export function useAnalytics(): AnalyticsData {
+interface AnalyticsResult extends AnalyticsData {
+  refetch: () => void;
+}
+
+export function useAnalytics(): AnalyticsResult {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [adherenceData, setAdherenceData] = useState<AdherenceDataPoint[]>([]);
   const [weightData, setWeightData] = useState<WeightDataPoint[]>([]);
   const [averageDailyCalories, setAverageDailyCalories] = useState(0);
+  const [fetchTrigger, setFetchTrigger] = useState(0);
+
+  const refetch = useCallback(() => setFetchTrigger((n) => n + 1), []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -99,7 +106,7 @@ export function useAnalytics(): AnalyticsData {
     };
 
     fetchAnalytics();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchTrigger]);
 
   const averageAdherence = adherenceData.length > 0
     ? Math.round(adherenceData.reduce((sum, d) => sum + d.value, 0) / adherenceData.length)
@@ -117,5 +124,6 @@ export function useAnalytics(): AnalyticsData {
     currentWeight,
     weeklyWeightChange,
     averageDailyCalories,
+    refetch,
   };
 }

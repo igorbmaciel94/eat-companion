@@ -33,6 +33,8 @@ export const useAuthStore = create<AuthState>()(
             displayName: response.user.displayName,
             calorieTarget: response.user.calorieTarget,
             goalType: response.user.goalType,
+            heightCm: response.user.heightCm,
+            weightKg: response.user.weightKg,
             createdAt: response.user.createdAt,
           },
           isAuthenticated: true,

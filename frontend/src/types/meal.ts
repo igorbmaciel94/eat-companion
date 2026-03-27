@@ -30,7 +30,7 @@ export interface MealOption {
 export interface Meal {
   id: string;
   type: string;
-  mealType?: number;
+  mealType?: number | string;
   time?: string;
   options: MealOption[];
   selectedOptionId?: string;

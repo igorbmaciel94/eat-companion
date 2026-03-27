@@ -21,7 +21,10 @@ export function ProfilePage() {
 
   const [editingCalories, setEditingCalories] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
+  const [editingBody, setEditingBody] = useState(false);
   const [customCalories, setCustomCalories] = useState('');
+  const [heightInput, setHeightInput] = useState('');
+  const [weightInput, setWeightInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   const displayName = user?.displayName || 'User';
@@ -43,6 +46,25 @@ export function ProfilePage() {
       updateUser({ calorieTarget: value });
       setEditingCalories(false);
       setCustomCalories('');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveBody = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const updates: { heightCm?: number; weightKg?: number } = {};
+      const h = parseFloat(heightInput);
+      const w = parseFloat(weightInput);
+      if (h > 0) updates.heightCm = h;
+      if (w > 0) updates.weightKg = w;
+      if (Object.keys(updates).length > 0) {
+        await profileApi.update(updates);
+        updateUser(updates);
+      }
+      setEditingBody(false);
     } finally {
       setSaving(false);
     }
@@ -121,6 +143,7 @@ export function ProfilePage() {
               onClick={() => {
                 setEditingCalories(!editingCalories);
                 setEditingGoal(false);
+                setEditingBody(false);
               }}
             >
               <div>
@@ -185,6 +208,7 @@ export function ProfilePage() {
               onClick={() => {
                 setEditingGoal(!editingGoal);
                 setEditingCalories(false);
+                setEditingBody(false);
               }}
             >
               <div>
@@ -223,6 +247,76 @@ export function ProfilePage() {
                     </button>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Body Measurements */}
+          <div>
+            <button
+              className="w-full flex items-center justify-between p-4 text-left"
+              onClick={() => {
+                setEditingBody(!editingBody);
+                setEditingCalories(false);
+                setEditingGoal(false);
+                if (!editingBody) {
+                  setHeightInput(user?.heightCm?.toString() || '');
+                  setWeightInput(user?.weightKg?.toString() || '');
+                }
+              }}
+            >
+              <div>
+                <p className="font-headline font-medium text-on-surface text-sm">
+                  Body Measurements
+                </p>
+                <p className="text-on-surface-variant text-xs mt-0.5">
+                  {user?.heightCm ? `${user.heightCm} cm` : 'Height not set'}
+                  {' · '}
+                  {user?.weightKg ? `${user.weightKg} kg` : 'Weight not set'}
+                </p>
+              </div>
+              <Icon
+                name={editingBody ? 'expand_less' : 'chevron_right'}
+                size={20}
+                className="text-on-surface-variant"
+              />
+            </button>
+
+            {editingBody && (
+              <div className="px-4 pb-4 space-y-3">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-on-surface-variant mb-1">Height (cm)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      placeholder="175"
+                      value={heightInput}
+                      onChange={(e) => setHeightInput(e.target.value)}
+                      className="w-full bg-surface-container-low rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-on-surface-variant mb-1">Weight (kg)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      placeholder="75.5"
+                      value={weightInput}
+                      onChange={(e) => setWeightInput(e.target.value)}
+                      className="w-full bg-surface-container-low rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                </div>
+                <button
+                  disabled={saving}
+                  onClick={handleSaveBody}
+                  className="w-full bg-primary text-on-primary py-2.5 rounded-xl text-sm font-label font-medium disabled:opacity-50 transition-colors"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
               </div>
             )}
           </div>

@@ -37,9 +37,9 @@ export function GoalSelectionPage() {
     try {
       const { data } = await profileApi.update({ goalType });
       updateUser({ goalType: data.goalType });
-      navigate('/onboarding/calories');
+      navigate('/onboarding/body');
     } catch {
-      navigate('/onboarding/calories');
+      navigate('/onboarding/body');
     } finally {
       setLoading(null);
     }
@@ -49,7 +49,7 @@ export function GoalSelectionPage() {
     <div className="flex flex-col flex-1">
       {/* Step indicator */}
       <p className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-        Step 1 of 2
+        Step 1 of 3
       </p>
 
       {/* Heading */}

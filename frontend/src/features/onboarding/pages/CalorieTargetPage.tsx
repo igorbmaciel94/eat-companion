@@ -42,7 +42,7 @@ export function CalorieTargetPage() {
     <div className="flex flex-col flex-1">
       {/* Step indicator */}
       <p className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-        Step 2 of 2
+        Step 3 of 3
       </p>
 
       {/* Heading */}

@@ -8,5 +8,7 @@ public record UserProfileDto(
     string DisplayName,
     int CalorieTarget,
     GoalType GoalType,
+    decimal? HeightCm,
+    decimal? WeightKg,
     DateTime CreatedAt
 );

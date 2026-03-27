@@ -26,7 +26,7 @@ public class GetDailySummaryQueryHandler
         if (day is null)
             throw new NotFoundException("MealPlanDay", query.Date);
 
-        var meals = day.Meals.Adapt<List<MealDto>>();
+        var meals = day.Meals.OrderBy(m => m.MealType).ThenBy(m => m.SortOrder).Adapt<List<MealDto>>();
 
         var selectedOptions = day.Meals
             .SelectMany(m => m.Options)

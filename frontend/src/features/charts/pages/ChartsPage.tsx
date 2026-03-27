@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -10,6 +11,8 @@ import {
 } from 'recharts';
 import { Icon } from '../../../components/ui/Icon';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { weightEntriesApi } from '../../../api/weightEntries';
+import { useAuthStore } from '../../../stores/authStore';
 
 export function ChartsPage() {
   const {
@@ -19,7 +22,32 @@ export function ChartsPage() {
     currentWeight,
     weeklyWeightChange,
     averageDailyCalories,
+    refetch,
   } = useAnalytics();
+
+  const user = useAuthStore((s) => s.user);
+  const startWeight = user?.weightKg;
+
+  const [showWeightForm, setShowWeightForm] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleLogWeight = async () => {
+    const val = parseFloat(weightInput);
+    if (!val || val < 20 || val > 400 || saving) return;
+    setSaving(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await weightEntriesApi.add({ date: today, weightKg: val });
+      setWeightInput('');
+      setShowWeightForm(false);
+      refetch();
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const hasData = adherenceData.length > 0 || weightData.length > 0;
 
@@ -31,11 +59,46 @@ export function ChartsPage() {
         </div>
         <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">No data yet</h2>
         <p className="text-on-surface-variant text-base mb-8">
-          Start logging meals to see your progress and analytics here.
+          Start logging meals and weight to see your progress here.
         </p>
+
+        {/* Log weight even with no data */}
+        <button
+          onClick={() => setShowWeightForm(true)}
+          className="flex items-center gap-2 bg-primary text-on-primary rounded-full px-6 py-3 font-medium text-sm"
+        >
+          <Icon name="monitor_weight" size={18} />
+          Log today's weight
+        </button>
+
+        {showWeightForm && (
+          <div className="mt-4 w-full max-w-xs">
+            <div className="flex gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                placeholder="75.5"
+                value={weightInput}
+                onChange={(e) => setWeightInput(e.target.value)}
+                className="flex-1 bg-surface-container-lowest rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
+                autoFocus
+              />
+              <button
+                disabled={saving || !weightInput}
+                onClick={handleLogWeight}
+                className="bg-primary text-on-primary px-4 py-2.5 rounded-xl text-sm font-label font-medium disabled:opacity-50 transition-colors"
+              >
+                {saving ? '...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
+
+  const totalWeightChange = currentWeight && startWeight ? +(currentWeight - startWeight).toFixed(1) : null;
 
   return (
     <div className="py-2">
@@ -89,47 +152,90 @@ export function ChartsPage() {
             <h2 className="font-headline font-semibold text-on-surface text-base mb-0.5">
               Weight Trend
             </h2>
-            <p className="text-on-surface-variant text-xs">This week's measurements</p>
+            <p className="text-on-surface-variant text-xs">Your measurements over time</p>
           </div>
           <div className="flex items-center gap-1 bg-primary-container text-on-primary-container px-2.5 py-1 rounded-full">
             <Icon name="monitor_weight" size={14} />
-            <span className="text-xs font-medium">{currentWeight} KG</span>
+            <span className="text-xs font-medium">{currentWeight || '—'} KG</span>
           </div>
         </div>
 
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weightData}>
-              <XAxis
-                dataKey="day"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#56615f' }}
+        {weightData.length > 0 ? (
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weightData}>
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#56615f' }}
+                />
+                <YAxis
+                  hide
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value) => [`${value} kg`, 'Weight']}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke="#016b61"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#016b61', strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, fill: '#016b61' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-on-surface-variant text-sm text-center py-6">No weight entries yet</p>
+        )}
+
+        {/* Log weight button */}
+        <div className="mt-3 pt-3 border-t border-outline-variant/30">
+          {showWeightForm ? (
+            <div className="flex gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                placeholder="75.5 kg"
+                value={weightInput}
+                onChange={(e) => setWeightInput(e.target.value)}
+                className="flex-1 bg-surface-container-low rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
+                autoFocus
               />
-              <YAxis
-                hide
-                domain={['dataMin - 0.5', 'dataMax + 0.5']}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                  fontSize: '12px',
-                }}
-                formatter={(value) => [`${value} kg`, 'Weight']}
-              />
-              <Line
-                type="monotone"
-                dataKey="weight"
-                stroke="#016b61"
-                strokeWidth={2.5}
-                dot={{ fill: '#016b61', strokeWidth: 0, r: 4 }}
-                activeDot={{ r: 6, fill: '#016b61' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+              <button
+                disabled={saving || !weightInput}
+                onClick={handleLogWeight}
+                className="bg-primary text-on-primary px-4 py-2.5 rounded-xl text-sm font-label font-medium disabled:opacity-50 transition-colors"
+              >
+                {saving ? '...' : 'Save'}
+              </button>
+              <button
+                onClick={() => { setShowWeightForm(false); setWeightInput(''); }}
+                className="text-on-surface-variant px-2 py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowWeightForm(true)}
+              className="w-full flex items-center justify-center gap-2 text-primary text-sm font-medium py-1"
+            >
+              <Icon name="add" size={18} />
+              Log today's weight
+            </button>
+          )}
         </div>
       </div>
 
@@ -152,6 +258,26 @@ export function ChartsPage() {
           <p className="text-on-surface-variant text-xs">kg this week</p>
         </div>
       </div>
+
+      {/* Total progress from start */}
+      {totalWeightChange !== null && startWeight && (
+        <div className="bg-surface-container-lowest rounded-2xl p-4 editorial-shadow mt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="flag" size={18} className="text-tertiary" />
+              <span className="text-on-surface-variant text-xs font-label">Since start</span>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-headline font-bold text-on-surface">
+                {totalWeightChange > 0 ? '+' : ''}{totalWeightChange} kg
+              </p>
+              <p className="text-on-surface-variant text-xs">
+                {startWeight} kg → {currentWeight} kg
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

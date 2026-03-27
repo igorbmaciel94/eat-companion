@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('./features/auth/pages/LoginPage').then(m =>
 const RegisterPage = lazy(() => import('./features/auth/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const WelcomePage = lazy(() => import('./features/onboarding/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 const GoalSelectionPage = lazy(() => import('./features/onboarding/pages/GoalSelectionPage').then(m => ({ default: m.GoalSelectionPage })));
+const BodyMeasurementsPage = lazy(() => import('./features/onboarding/pages/BodyMeasurementsPage').then(m => ({ default: m.BodyMeasurementsPage })));
 const CalorieTargetPage = lazy(() => import('./features/onboarding/pages/CalorieTargetPage').then(m => ({ default: m.CalorieTargetPage })));
 const TodayPage = lazy(() => import('./features/dashboard/pages/TodayPage').then(m => ({ default: m.TodayPage })));
 const PlanPage = lazy(() => import('./features/plan/pages/PlanPage').then(m => ({ default: m.PlanPage })));
@@ -73,6 +74,7 @@ export function AppRoutes() {
           <Route element={<OnboardingLayout />}>
             <Route path="/welcome" element={<SuspenseWrapper><WelcomePage /></SuspenseWrapper>} />
             <Route path="/goals" element={<SuspenseWrapper><GoalSelectionPage /></SuspenseWrapper>} />
+            <Route path="/onboarding/body" element={<SuspenseWrapper><BodyMeasurementsPage /></SuspenseWrapper>} />
             <Route path="/onboarding/calories" element={<SuspenseWrapper><CalorieTargetPage /></SuspenseWrapper>} />
           </Route>
         </Route>

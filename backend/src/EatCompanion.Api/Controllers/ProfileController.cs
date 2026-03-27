@@ -35,12 +35,12 @@ public class ProfileController : ControllerBase
         return Ok(result);
     }
 
-    public record UpdateProfileRequest(string? DisplayName, int? CalorieTarget, GoalType? GoalType);
+    public record UpdateProfileRequest(string? DisplayName, int? CalorieTarget, GoalType? GoalType, decimal? HeightCm, decimal? WeightKg);
 
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateProfileRequest request)
     {
-        var command = new UpdateProfileCommand(GetUserId(), request.DisplayName, request.CalorieTarget, request.GoalType);
+        var command = new UpdateProfileCommand(GetUserId(), request.DisplayName, request.CalorieTarget, request.GoalType, request.HeightCm, request.WeightKg);
 
         var validation = await _updateValidator.ValidateAsync(command);
         if (!validation.IsValid)

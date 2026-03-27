@@ -27,6 +27,15 @@ public class GroceryListRepository : IGroceryListRepository
             .FirstOrDefaultAsync(gl => gl.Id == id);
     }
 
+    public async Task<GroceryList?> GetLatestByMealPlanIdAsync(Guid mealPlanId)
+    {
+        return await _context.GroceryLists
+            .Include(gl => gl.Items)
+            .Where(gl => gl.MealPlanId == mealPlanId)
+            .OrderByDescending(gl => gl.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<GroceryItem?> GetItemByIdAsync(Guid itemId)
     {
         return await _context.Set<GroceryItem>()

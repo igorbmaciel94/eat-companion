@@ -11,15 +11,18 @@ namespace EatCompanion.Api.Controllers;
 public class GroceryListsController : ControllerBase
 {
     private readonly GetGroceryListQueryHandler _getGroceryListHandler;
+    private readonly GetLatestGroceryListQueryHandler _getLatestHandler;
     private readonly ToggleGroceryItemCommandHandler _toggleItemHandler;
     private readonly GenerateGroceryListCommandHandler _generateHandler;
 
     public GroceryListsController(
         GetGroceryListQueryHandler getGroceryListHandler,
+        GetLatestGroceryListQueryHandler getLatestHandler,
         ToggleGroceryItemCommandHandler toggleItemHandler,
         GenerateGroceryListCommandHandler generateHandler)
     {
         _getGroceryListHandler = getGroceryListHandler;
+        _getLatestHandler = getLatestHandler;
         _toggleItemHandler = toggleItemHandler;
         _generateHandler = generateHandler;
     }
@@ -32,6 +35,14 @@ public class GroceryListsController : ControllerBase
     public async Task<IActionResult> Generate([FromBody] GenerateRequest request)
     {
         var result = await _generateHandler.Handle(new GenerateGroceryListCommand(request.MealPlanId, request.StartDate, request.EndDate, GetUserId()));
+        return Ok(result);
+    }
+
+    [HttpGet("latest")]
+    public async Task<IActionResult> GetLatest([FromQuery] Guid mealPlanId)
+    {
+        var result = await _getLatestHandler.Handle(new GetLatestGroceryListQuery(mealPlanId));
+        if (result is null) return NotFound();
         return Ok(result);
     }
 

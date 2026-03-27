@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { groceryListsApi } from '../../../api/groceryLists';
 import { useUiStore } from '../../../stores/uiStore';
 import { useAuthStore } from '../../../stores/authStore';
@@ -40,12 +40,74 @@ const emptyData: GroceryListData = {
   categories: [],
 };
 
+function parseGroceryList(fullList: { id: string; startDate: string; endDate: string; items: { id: string; name: string; namePt?: string; totalAmount?: number; unit?: string; category?: string; isChecked?: boolean; checked?: boolean }[] }): { data: GroceryListData; checked: Set<string> } {
+  const categoryMap = new Map<string, GroceryItemView[]>();
+  const checked = new Set<string>();
+
+  for (const item of fullList.items) {
+    const cat = item.category || 'Other';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push({
+      id: item.id,
+      name: item.name,
+      namePt: item.namePt,
+      totalAmount: item.totalAmount,
+      unit: item.unit,
+    });
+    if (item.isChecked || item.checked) checked.add(item.name);
+  }
+
+  const categories: Category[] = Array.from(categoryMap.entries()).map(([name, items]) => ({
+    name,
+    items,
+  }));
+
+  const startDate = fullList.startDate?.split('T')[0] || '';
+  const endDate = fullList.endDate?.split('T')[0] || '';
+  const days = startDate && endDate ? Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1) : 3;
+
+  return {
+    data: {
+      totalItems: fullList.items.length,
+      consolidationDays: days,
+      dateRange: startDate && endDate ? `${formatShortDate(startDate)} — ${formatShortDate(endDate)}` : '',
+      categories,
+      listId: fullList.id,
+    },
+    checked,
+  };
+}
+
 export function useGroceryList() {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [data, setData] = useState<GroceryListData>(emptyData);
   const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(false);
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Auto-load existing grocery list on mount
+  useEffect(() => {
+    if (!isAuthenticated || !activePlanId) return;
+
+    const loadExisting = async () => {
+      setLoading(true);
+      try {
+        const { data: fullList } = await groceryListsApi.getLatest(activePlanId);
+        if (fullList && fullList.items && fullList.items.length > 0) {
+          const parsed = parseGroceryList(fullList);
+          setData(parsed.data);
+          setCheckedItems(parsed.checked);
+        }
+      } catch {
+        // No existing list, that's fine
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExisting();
+  }, [activePlanId, isAuthenticated]);
 
   const generate = useCallback(async () => {
     if (!isAuthenticated || !activePlanId || generating) return;
@@ -60,35 +122,9 @@ export function useGroceryList() {
         const { data: fullList } = await groceryListsApi.getById(listData.id);
 
         if (fullList && fullList.items && fullList.items.length > 0) {
-          const categoryMap = new Map<string, GroceryItemView[]>();
-          const checked = new Set<string>();
-
-          for (const item of fullList.items) {
-            const cat = item.category || 'Other';
-            if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-            categoryMap.get(cat)!.push({
-              id: item.id,
-              name: item.name,
-              namePt: item.namePt,
-              totalAmount: item.totalAmount,
-              unit: item.unit,
-            });
-            if (item.isChecked || item.checked) checked.add(item.name);
-          }
-
-          const categories: Category[] = Array.from(categoryMap.entries()).map(([name, items]) => ({
-            name,
-            items,
-          }));
-
-          setData({
-            totalItems: fullList.items.length,
-            consolidationDays: 3,
-            dateRange: `${formatShortDate(startDate)} — ${formatShortDate(endDate)}`,
-            categories,
-            listId: fullList.id,
-          });
-          setCheckedItems(checked);
+          const parsed = parseGroceryList(fullList);
+          setData(parsed.data);
+          setCheckedItems(parsed.checked);
         }
       }
     } catch {
@@ -148,6 +184,7 @@ export function useGroceryList() {
     progress,
     generate,
     generating,
+    loading,
     copyList,
     hasActivePlan: !!activePlanId,
   };

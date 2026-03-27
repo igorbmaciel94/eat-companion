@@ -60,6 +60,7 @@ builder.Services.AddScoped<DeleteIngredientCommandHandler>();
 builder.Services.AddScoped<LogMealCommandHandler>();
 builder.Services.AddScoped<GetMealLogsQueryHandler>();
 builder.Services.AddScoped<GetGroceryListQueryHandler>();
+builder.Services.AddScoped<GetLatestGroceryListQueryHandler>();
 builder.Services.AddScoped<ToggleGroceryItemCommandHandler>();
 builder.Services.AddScoped<GenerateGroceryListCommandHandler>();
 builder.Services.AddScoped<GetWeeklyAdherenceQueryHandler>();

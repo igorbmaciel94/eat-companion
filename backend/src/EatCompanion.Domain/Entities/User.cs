@@ -10,6 +10,8 @@ public class User
     public string DisplayName { get; set; } = string.Empty;
     public int CalorieTarget { get; set; } = 2000;
     public GoalType GoalType { get; set; } = GoalType.Maintain;
+    public decimal? HeightCm { get; set; }
+    public decimal? WeightKg { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

@@ -27,6 +27,8 @@ public class GetProfileQueryHandler
             user.DisplayName,
             user.CalorieTarget,
             user.GoalType,
+            user.HeightCm,
+            user.WeightKg,
             user.CreatedAt
         );
     }

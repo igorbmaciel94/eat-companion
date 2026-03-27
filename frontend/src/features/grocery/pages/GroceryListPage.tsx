@@ -29,7 +29,7 @@ function formatAmount(amount?: number, unit?: string): string {
 }
 
 export function GroceryListPage() {
-  const { data, checkedItems, toggleItem, generate, generating, copyList, hasActivePlan } = useGroceryList();
+  const { data, checkedItems, toggleItem, generate, generating, loading, copyList, hasActivePlan } = useGroceryList();
   const [copied, setCopied] = useState(false);
 
   if (!hasActivePlan) {
@@ -42,6 +42,14 @@ export function GroceryListPage() {
         <p className="text-on-surface-variant text-base">
           Import a meal plan first to generate your grocery list.
         </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="py-2 flex items-center justify-center min-h-[50vh]">
+        <p className="text-on-surface-variant text-sm">Loading grocery list...</p>
       </div>
     );
   }
