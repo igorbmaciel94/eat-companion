@@ -23,7 +23,17 @@ public class MealPlanRepository : IMealPlanRepository
             .FirstOrDefaultAsync(mp => mp.Id == id);
     }
 
-    public async Task<IReadOnlyList<MealPlan>> GetByUserIdAsync(Guid userId)
+    public async Task<MealPlan?> GetByIdWithDetailsAsync(Guid id)
+    {
+        return await _context.MealPlans
+            .Include(mp => mp.Days)
+                .ThenInclude(d => d.Meals)
+                    .ThenInclude(m => m.Options)
+                        .ThenInclude(o => o.Ingredients)
+            .FirstOrDefaultAsync(mp => mp.Id == id);
+    }
+
+    public async Task<List<MealPlan>> GetByUserIdAsync(Guid userId)
     {
         return await _context.MealPlans
             .Where(mp => mp.UserId == userId)
@@ -40,6 +50,19 @@ public class MealPlanRepository : IMealPlanRepository
             .FirstOrDefaultAsync(d => d.MealPlanId == mealPlanId && d.Date == date);
     }
 
+    public async Task<MealOption?> GetMealOptionAsync(Guid optionId)
+    {
+        return await _context.Set<MealOption>()
+            .FirstOrDefaultAsync(o => o.Id == optionId);
+    }
+
+    public async Task<List<MealOption>> GetSiblingOptionsAsync(Guid mealId)
+    {
+        return await _context.Set<MealOption>()
+            .Where(o => o.MealId == mealId)
+            .ToListAsync();
+    }
+
     public async Task AddAsync(MealPlan mealPlan)
     {
         await _context.MealPlans.AddAsync(mealPlan);
@@ -48,5 +71,10 @@ public class MealPlanRepository : IMealPlanRepository
     public void Update(MealPlan mealPlan)
     {
         _context.MealPlans.Update(mealPlan);
+    }
+
+    public void UpdateOption(MealOption option)
+    {
+        _context.Set<MealOption>().Update(option);
     }
 }

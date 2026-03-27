@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\EatCompanion.Infrastructure\EatCompanion.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\EatCompanion.Application\EatCompanion.Application.csproj" />
+    <ProjectReference Include="..\..\src\EatCompanion.Domain\EatCompanion.Domain.csproj" />
   </ItemGroup>
 
 </Project>

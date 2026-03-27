@@ -4,8 +4,8 @@ namespace EatCompanion.Domain.Interfaces;
 
 public interface IGroceryListRepository
 {
-    Task<GroceryList?> GetByIdAsync(Guid id);
-    Task<IReadOnlyList<GroceryList>> GetByUserIdAsync(Guid userId);
+    Task<GroceryList?> GetByIdWithItemsAsync(Guid id);
+    Task<GroceryItem?> GetItemByIdAsync(Guid itemId);
     Task AddAsync(GroceryList groceryList);
-    void Update(GroceryList groceryList);
+    void UpdateItem(GroceryItem item);
 }

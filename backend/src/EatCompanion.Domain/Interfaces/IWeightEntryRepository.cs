@@ -4,7 +4,6 @@ namespace EatCompanion.Domain.Interfaces;
 
 public interface IWeightEntryRepository
 {
-    Task<IReadOnlyList<WeightEntry>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate);
-    Task AddAsync(WeightEntry entry);
-    Task<WeightEntry?> GetLatestAsync(Guid userId);
+    Task<List<WeightEntry>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate);
+    Task AddAsync(WeightEntry weightEntry);
 }

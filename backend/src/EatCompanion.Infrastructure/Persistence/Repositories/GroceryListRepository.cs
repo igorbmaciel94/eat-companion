@@ -20,6 +20,19 @@ public class GroceryListRepository : IGroceryListRepository
             .FirstOrDefaultAsync(gl => gl.Id == id);
     }
 
+    public async Task<GroceryList?> GetByIdWithItemsAsync(Guid id)
+    {
+        return await _context.GroceryLists
+            .Include(gl => gl.Items)
+            .FirstOrDefaultAsync(gl => gl.Id == id);
+    }
+
+    public async Task<GroceryItem?> GetItemByIdAsync(Guid itemId)
+    {
+        return await _context.Set<GroceryItem>()
+            .FirstOrDefaultAsync(gi => gi.Id == itemId);
+    }
+
     public async Task<IReadOnlyList<GroceryList>> GetByUserIdAsync(Guid userId)
     {
         return await _context.GroceryLists
@@ -37,5 +50,10 @@ public class GroceryListRepository : IGroceryListRepository
     public void Update(GroceryList groceryList)
     {
         _context.GroceryLists.Update(groceryList);
+    }
+
+    public void UpdateItem(GroceryItem item)
+    {
+        _context.Set<GroceryItem>().Update(item);
     }
 }

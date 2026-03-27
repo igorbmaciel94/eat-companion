@@ -1,0 +1,84 @@
+using EatCompanion.Application.Interfaces;
+using EatCompanion.Domain.Entities;
+using EatCompanion.Domain.Enums;
+
+namespace EatCompanion.Infrastructure.Services;
+
+public class GroceryListGenerator : IGroceryListGenerator
+{
+    public GroceryList Generate(MealPlan mealPlan, DateOnly startDate, DateOnly endDate, Guid userId)
+    {
+        var groceryList = new GroceryList
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            MealPlanId = mealPlan.Id,
+            StartDate = startDate,
+            EndDate = endDate,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Calculate how many days in the range
+        var totalDays = endDate.DayNumber - startDate.DayNumber + 1;
+        if (totalDays <= 0) totalDays = 1;
+
+        // Collect all selected ingredients across the date range
+        var ingredientAggregator = new Dictionary<(string Name, IngredientCategory Category, UnitOfMeasure Unit), decimal>();
+
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            var dayOfWeek = (int)date.DayOfWeek; // Sunday=0
+
+            // Find the matching day in the meal plan
+            var mealPlanDay = mealPlan.Days.FirstOrDefault(d => d.DayOfWeek == dayOfWeek)
+                              ?? mealPlan.Days.FirstOrDefault(); // fallback to template
+
+            if (mealPlanDay is null) continue;
+
+            foreach (var meal in mealPlanDay.Meals)
+            {
+                // Take the selected option (or first if none selected)
+                var selectedOption = meal.Options.FirstOrDefault(o => o.IsSelected)
+                                     ?? meal.Options.FirstOrDefault();
+
+                if (selectedOption is null) continue;
+
+                foreach (var ingredient in selectedOption.Ingredients)
+                {
+                    var key = (ingredient.Name, ingredient.Category, ingredient.Unit);
+                    if (ingredientAggregator.ContainsKey(key))
+                    {
+                        ingredientAggregator[key] += ingredient.Amount;
+                    }
+                    else
+                    {
+                        ingredientAggregator[key] = ingredient.Amount;
+                    }
+                }
+            }
+        }
+
+        // Create grocery items from aggregated ingredients
+        foreach (var ((name, category, unit), totalAmount) in ingredientAggregator)
+        {
+            groceryList.Items.Add(new GroceryItem
+            {
+                Id = Guid.NewGuid(),
+                GroceryListId = groceryList.Id,
+                Name = name,
+                Category = category,
+                TotalAmount = totalAmount,
+                Unit = unit,
+                IsChecked = false
+            });
+        }
+
+        // Sort by category then name
+        groceryList.Items = groceryList.Items
+            .OrderBy(i => i.Category)
+            .ThenBy(i => i.Name)
+            .ToList();
+
+        return groceryList;
+    }
+}

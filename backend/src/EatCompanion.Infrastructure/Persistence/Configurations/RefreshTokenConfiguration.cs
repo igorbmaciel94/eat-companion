@@ -22,8 +22,10 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.Property(rt => rt.CreatedAt)
             .IsRequired();
 
+        builder.Property(rt => rt.IsRevoked)
+            .IsRequired();
+
         builder.Ignore(rt => rt.IsExpired);
-        builder.Ignore(rt => rt.IsRevoked);
         builder.Ignore(rt => rt.IsActive);
     }
 }

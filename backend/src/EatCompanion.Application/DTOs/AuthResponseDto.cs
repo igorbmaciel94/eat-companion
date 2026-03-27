@@ -1,3 +1,3 @@
 namespace EatCompanion.Application.DTOs;
 
-public record AuthResponseDto(string AccessToken, string RefreshToken, UserProfileDto User);
+public record AuthResponseDto(string AccessToken, string RefreshToken, DateTime ExpiresAt, UserProfileDto User);

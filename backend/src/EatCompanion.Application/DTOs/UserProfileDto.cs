@@ -7,5 +7,6 @@ public record UserProfileDto(
     string Email,
     string DisplayName,
     int CalorieTarget,
-    GoalType GoalType
+    GoalType GoalType,
+    DateTime CreatedAt
 );

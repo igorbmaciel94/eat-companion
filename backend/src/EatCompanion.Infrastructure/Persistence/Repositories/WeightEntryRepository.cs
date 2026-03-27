@@ -13,7 +13,7 @@ public class WeightEntryRepository : IWeightEntryRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyList<WeightEntry>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate)
+    public async Task<List<WeightEntry>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate)
     {
         return await _context.WeightEntries
             .Where(we => we.UserId == userId && we.Date >= startDate && we.Date <= endDate)

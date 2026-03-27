@@ -13,7 +13,7 @@ public class MealLogRepository : IMealLogRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyList<MealLog>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate)
+    public async Task<List<MealLog>> GetByUserAndDateRangeAsync(Guid userId, DateOnly startDate, DateOnly endDate)
     {
         return await _context.MealLogs
             .Include(ml => ml.MealOption)
