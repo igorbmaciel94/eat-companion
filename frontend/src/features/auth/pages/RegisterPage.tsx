@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { authApi } from '../../../api/auth';
-import { useAuthStore } from '../../../stores/authStore';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -11,16 +10,18 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
-      const { data } = await authApi.register({ email, password, displayName: name });
-      useAuthStore.getState().login(data);
-      navigate('/welcome');
+      await authApi.register({ email, password, displayName: name });
+      setSuccess('Account created! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } };
       setError(axiosErr.response?.data?.detail || 'Registration failed');
@@ -57,6 +58,9 @@ export function RegisterPage() {
       />
       {error && (
         <div className="text-error text-sm text-center">{error}</div>
+      )}
+      {success && (
+        <div className="text-primary text-sm text-center font-medium">{success}</div>
       )}
       <Button type="submit" fullWidth size="lg" className="mt-4" disabled={loading}>
         {loading ? 'Creating account...' : 'Create Account'}

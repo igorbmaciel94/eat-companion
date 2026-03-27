@@ -33,10 +33,18 @@ function RequireAuth() {
   return <Outlet />;
 }
 
-/** Redirects to / if user is already authenticated */
+/** Redirects authenticated users: to /welcome if onboarding pending, to / if completed */
 function RedirectIfAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  if (isAuthenticated) return <Navigate to="/" replace />;
+  const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
+  if (isAuthenticated) return <Navigate to={onboardingCompleted ? '/' : '/welcome'} replace />;
+  return <Outlet />;
+}
+
+/** Redirects to /welcome if onboarding not completed */
+function RequireOnboardingComplete() {
+  const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
+  if (!onboardingCompleted) return <Navigate to="/welcome" replace />;
   return <Outlet />;
 }
 
@@ -60,7 +68,7 @@ export function AppRoutes() {
 
       {/* Protected routes — redirect to /login if not authenticated */}
       <Route element={<RequireAuth />}>
-        {/* Onboarding — skip if already completed */}
+        {/* Onboarding — only accessible if NOT completed */}
         <Route element={<RequireOnboarding />}>
           <Route element={<OnboardingLayout />}>
             <Route path="/welcome" element={<SuspenseWrapper><WelcomePage /></SuspenseWrapper>} />
@@ -69,14 +77,20 @@ export function AppRoutes() {
           </Route>
         </Route>
 
-        {/* App routes with bottom nav */}
+        {/* Import — accessible anytime (needed right after onboarding) */}
         <Route element={<AppShell />}>
-          <Route path="/" element={<SuspenseWrapper><TodayPage /></SuspenseWrapper>} />
-          <Route path="/plan" element={<SuspenseWrapper><PlanPage /></SuspenseWrapper>} />
           <Route path="/plan/import" element={<SuspenseWrapper><ImportPage /></SuspenseWrapper>} />
-          <Route path="/grocery" element={<SuspenseWrapper><GroceryListPage /></SuspenseWrapper>} />
-          <Route path="/charts" element={<SuspenseWrapper><ChartsPage /></SuspenseWrapper>} />
-          <Route path="/profile" element={<SuspenseWrapper><ProfilePage /></SuspenseWrapper>} />
+        </Route>
+
+        {/* Main app — only accessible AFTER onboarding completed */}
+        <Route element={<RequireOnboardingComplete />}>
+          <Route element={<AppShell />}>
+            <Route path="/" element={<SuspenseWrapper><TodayPage /></SuspenseWrapper>} />
+            <Route path="/plan" element={<SuspenseWrapper><PlanPage /></SuspenseWrapper>} />
+            <Route path="/grocery" element={<SuspenseWrapper><GroceryListPage /></SuspenseWrapper>} />
+            <Route path="/charts" element={<SuspenseWrapper><ChartsPage /></SuspenseWrapper>} />
+            <Route path="/profile" element={<SuspenseWrapper><ProfilePage /></SuspenseWrapper>} />
+          </Route>
         </Route>
       </Route>
 
