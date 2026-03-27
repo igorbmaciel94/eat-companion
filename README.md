@@ -1,4 +1,4 @@
-# The Atrium - Mindful Kitchen
+# Eat Companion
 
 [![CI](https://github.com/igorbmaciel94/eat-companion/actions/workflows/ci.yml/badge.svg)](https://github.com/igorbmaciel94/eat-companion/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/igorbmaciel94/eat-companion/actions/workflows/codeql.yml/badge.svg)](https://github.com/igorbmaciel94/eat-companion/actions/workflows/codeql.yml)
