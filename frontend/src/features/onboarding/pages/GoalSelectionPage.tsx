@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
 import { profileApi } from '../../../api/profile';
 import { useAuthStore } from '../../../stores/authStore';
+import { normalizeGoalType } from '../../../utils/goalType';
 
 // Note: onboardingCompleted is set in CalorieTargetPage (final step)
 
@@ -38,7 +39,7 @@ export function GoalSelectionPage() {
     setError(null);
     try {
       const { data } = await profileApi.update({ goalType });
-      updateUser({ goalType: data.goalType });
+      updateUser({ goalType: normalizeGoalType(data.goalType) });
       navigate('/onboarding/body');
     } catch {
       setError('Could not save your goal. Please try again.');

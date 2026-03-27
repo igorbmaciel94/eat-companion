@@ -19,6 +19,7 @@ export function CalorieTargetPage() {
   const [custom, setCustom] = useState('');
   const [useCustom, setUseCustom] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,15 +27,14 @@ export function CalorieTargetPage() {
     if (!target || target < 500 || target > 9999) return;
 
     setLoading(true);
+    setError(null);
     try {
       const { data } = await profileApi.update({ calorieTarget: target, onboardingCompleted: true });
-      updateUser({ calorieTarget: data.calorieTarget, onboardingCompleted: true });
+      updateUser({ calorieTarget: data.calorieTarget, onboardingCompleted: data.onboardingCompleted });
       setOnboardingCompleted();
       navigate('/plan/import');
     } catch {
-      // proceed anyway — still mark locally
-      setOnboardingCompleted();
-      navigate('/plan/import');
+      setError('Could not save. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,6 +54,10 @@ export function CalorieTargetPage() {
       <p className="text-on-surface-variant text-base mb-8">
         Your nutritionist's plan will be tracked against this target.
       </p>
+
+      {error && (
+        <p className="text-error text-sm mb-4">{error}</p>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1">
         {/* Preset cards */}

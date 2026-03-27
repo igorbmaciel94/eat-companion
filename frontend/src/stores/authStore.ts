@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthResponse, UserProfile } from '../types';
+import { normalizeGoalType } from '../utils/goalType';
 
 interface AuthState {
   accessToken: string | null;
@@ -32,7 +33,7 @@ export const useAuthStore = create<AuthState>()(
             email: response.user.email,
             displayName: response.user.displayName,
             calorieTarget: response.user.calorieTarget,
-            goalType: response.user.goalType,
+            goalType: normalizeGoalType(response.user.goalType),
             heightCm: response.user.heightCm,
             weightKg: response.user.weightKg,
             onboardingCompleted: response.user.onboardingCompleted,
@@ -53,7 +54,10 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken, refreshToken }),
       updateUser: (updates: Partial<UserProfile>) =>
         set((state) => {
-          const newUser = state.user ? { ...state.user, ...updates } : null;
+          const normalized = updates.goalType !== undefined
+            ? { ...updates, goalType: normalizeGoalType(updates.goalType) }
+            : updates;
+          const newUser = state.user ? { ...state.user, ...normalized } : null;
           return {
             user: newUser,
             onboardingCompleted: newUser?.onboardingCompleted || state.onboardingCompleted,

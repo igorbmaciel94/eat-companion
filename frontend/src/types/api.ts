@@ -18,7 +18,7 @@ export interface AuthResponse {
     email: string;
     displayName: string;
     calorieTarget?: number;
-    goalType?: number;
+    goalType?: number | string;
     heightCm?: number;
     weightKg?: number;
     onboardingCompleted?: boolean;
