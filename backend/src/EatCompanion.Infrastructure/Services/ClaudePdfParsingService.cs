@@ -5,7 +5,6 @@ using Anthropic.Models.Messages;
 using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Infrastructure.PdfParsing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -23,15 +22,27 @@ public class ClaudePdfParsingService : IPdfParsingService
     };
 
     private const string SystemPrompt = """
-        You are a nutritionist meal plan parser. You receive raw text extracted from a Portuguese nutritionist's PDF meal plan.
+        You are a nutritionist meal plan parser. You receive a PDF document from a Portuguese nutritionist containing a meal plan.
+        Read the PDF visually and extract all the structured data from it.
 
         Your job:
-        1. Identify all meal sections (Pequeno-almoço = Breakfast, Almoço = Lunch, Lanche da tarde = AfternoonSnack, Jantar = Dinner)
-        2. For each meal, identify all OR-options (separated by "OU" in Portuguese)
-        3. For each option, extract the ingredients with quantities and units
-        4. Translate ingredient names to English
-        5. Estimate calories, protein, carbs, and fat for each option based on the ingredients and quantities
-        6. Generate a short, clean English name for each option (e.g., "Eggs with Toast and Fruit")
+        1. Identify all meal sections: Pequeno-almoço = Breakfast, Almoço = Lunch, Lanche da tarde = AfternoonSnack, Jantar = Dinner
+        2. Each meal section may have multiple options separated by "OU" (meaning "OR"). Split them into separate options.
+        3. If dinner has "Opção 1" and "Opção 2", treat as separate options within a single Dinner meal.
+        4. For each option, extract EVERY individual ingredient as a separate item with quantity and unit.
+        5. Translate ingredient names to English but keep the Portuguese name in namePt.
+        6. Estimate realistic calories/protein/carbs/fat for each option based on the listed quantities.
+        7. Generate a short, clean English name for each option (e.g., "Crepioca with Cheese and Yogurt").
+
+        CRITICAL RULES FOR INGREDIENTS:
+        - Split compound ingredients: "arroz/massa/batata" means the person will choose ONE of rice, pasta, or potato — list ALL as separate ingredients with the same quantity, and add "(or)" to clarify alternatives.
+        - Split "+" separated items: "1 ovo + 2 colheres de sopa de tapioca + café" = 3 separate ingredients.
+        - Every food item MUST be listed: eggs, bread, cheese, yogurt, fruit, coffee, olive oil, soup, salad, vegetables, rice, pasta, potato, meat, fish, chicken, oats, granola, crackers, cottage cheese, etc.
+        - Include condiments and beverages: coffee, olive oil, mustard, salt, etc.
+        - "Salada/legumes a gosto e/ou sopa" = 3 ingredients: salad (1 Units), vegetables (1 Units), soup (1 Units)
+        - "150g de carne/peixe cozinhados ou 3 ovos" = 3 ingredients: meat (150 Grams), fish (150 Grams), eggs (3 Units) — they are alternatives
+        - "1 porção de fruta" = fruit (1 Units)
+        - Generic items like "café sem açúcar" = coffee (1 Units)
 
         Return ONLY valid JSON (no markdown, no code fences) in this exact format:
         {
@@ -40,8 +51,8 @@ public class ClaudePdfParsingService : IPdfParsingService
               "mealType": "Breakfast",
               "options": [
                 {
-                  "name": "short English name for this option",
-                  "description": "original Portuguese text for this option",
+                  "name": "short English name",
+                  "description": "original Portuguese text for this option, cleaned up",
                   "calories": 450,
                   "proteinGrams": 25.0,
                   "carbsGrams": 40.0,
@@ -62,15 +73,13 @@ public class ClaudePdfParsingService : IPdfParsingService
         }
 
         Rules:
-        - Ignore recommendation sections, nutritionist names/watermarks, recipe sections at the end
-        - If the text mentions "OU" (meaning "OR"), split into separate options
-        - If dinner has "Opção 1" and "Opção 2", treat as separate options
-        - Estimate calories realistically based on the ingredients and quantities listed
+        - Output exactly ONE entry per mealType. Do NOT duplicate Breakfast, Lunch, etc.
+        - Order meals as: Breakfast, Lunch, AfternoonSnack, Dinner
+        - Ignore recommendation sections ("Recomendações"), nutritionist names/watermarks, recipe appendices
         - Use these mealType values exactly: Breakfast, Lunch, AfternoonSnack, Dinner
         - Use these unit values exactly: Grams, Ml, Tablespoon, Teaspoon, Slice, Units
         - Use these category values exactly: Protein, Dairy, Grains, Produce, OilsAndCondiments, Other
-        - Keep the original Portuguese text in the "description" field for each option
-        - Keep the Portuguese ingredient name in "namePt"
+        - Category guidance: meat/fish/chicken/eggs = Protein, cheese/yogurt/cottage = Dairy, rice/pasta/bread/oats/crackers = Grains, fruit/vegetables/salad = Produce, olive oil/coffee/mustard = OilsAndCondiments
         """;
 
     public ClaudePdfParsingService(IConfiguration configuration, ILogger<ClaudePdfParsingService> logger)
@@ -81,58 +90,50 @@ public class ClaudePdfParsingService : IPdfParsingService
 
     public async Task<MealPlan> ParseAsync(Stream pdfStream, string fileName, Guid userId)
     {
-        // 1. Extract text from PDF
-        var extractor = new PdfTextExtractor();
-        var pages = extractor.ExtractPages(pdfStream);
-        var fullText = string.Join("\n---PAGE BREAK---\n", pages);
+        // 1. Read PDF into bytes (send directly to Claude — no text extraction)
+        using var memoryStream = new MemoryStream();
+        await pdfStream.CopyToAsync(memoryStream);
+        var pdfBytes = memoryStream.ToArray();
+        var base64Pdf = Convert.ToBase64String(pdfBytes);
 
-        _logger.LogInformation("Extracted {PageCount} pages from PDF, total {Length} chars", pages.Count, fullText.Length);
+        _logger.LogInformation("Read PDF {FileName}: {Size} bytes", fileName, pdfBytes.Length);
 
-        // 2. Try Claude API
-        var apiKey = _configuration["Anthropic:ApiKey"];
-        if (!string.IsNullOrEmpty(apiKey))
+        // 2. Send PDF to Claude API as a document
+        var apiKey = _configuration["Anthropic:ApiKey"]
+            ?? throw new InvalidOperationException("Anthropic API key is not configured. Set 'Anthropic:ApiKey' in configuration.");
+
+        var parsed = await CallClaudeApi(apiKey, base64Pdf);
+        if (parsed?.Meals?.Count > 0)
         {
-            try
-            {
-                var parsed = await CallClaudeApi(apiKey, fullText);
-                if (parsed?.Meals?.Count > 0)
-                {
-                    _logger.LogInformation("Claude parsed {MealCount} meals from PDF", parsed.Meals.Count);
-                    return BuildMealPlan(parsed, fileName, userId);
-                }
-                _logger.LogWarning("Claude returned empty meals, falling back to regex parser");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Claude API failed, falling back to regex parser");
-            }
-        }
-        else
-        {
-            _logger.LogWarning("No Anthropic API key configured, using regex parser fallback");
+            _logger.LogInformation("Claude parsed {MealCount} meals from PDF", parsed.Meals.Count);
+            return BuildMealPlan(parsed, fileName, userId);
         }
 
-        // 3. Fallback to regex-based parser
-        return FallbackParse(pages, fileName, userId);
+        throw new InvalidOperationException("Failed to parse meal plan from PDF. Claude returned no meals.");
     }
 
-    private async Task<ClaudeParsedPlan?> CallClaudeApi(string apiKey, string fullText)
+    private async Task<ClaudeParsedPlan?> CallClaudeApi(string apiKey, string base64Pdf)
     {
         var client = new AnthropicClient { ApiKey = apiKey };
 
         var model = _configuration["Anthropic:Model"] ?? "claude-sonnet-4-20250514";
 
+        // Send the PDF as a document block — Claude reads it visually
+        var pdfSource = new Base64PdfSource(base64Pdf);
+        var documentBlock = new DocumentBlockParam(pdfSource);
+        var textBlock = new TextBlockParam { Text = "Parse this Portuguese nutritionist meal plan. Return ONLY valid JSON." };
+
         var message = await client.Messages.Create(new MessageCreateParams
         {
             Model = model,
-            MaxTokens = 4096,
+            MaxTokens = 8192,
             System = SystemPrompt,
             Messages =
             [
                 new()
                 {
                     Role = Role.User,
-                    Content = $"Parse this Portuguese nutritionist meal plan:\n\n{fullText}"
+                    Content = new List<ContentBlockParam> { documentBlock, textBlock }
                 }
             ]
         });
@@ -140,9 +141,9 @@ public class ClaudePdfParsingService : IPdfParsingService
         string? json = null;
         foreach (var block in message.Content)
         {
-            if (block.TryPickText(out var textBlock))
+            if (block.TryPickText(out var textResult))
             {
-                json = textBlock.Text;
+                json = textResult.Text;
                 break;
             }
         }
@@ -340,99 +341,6 @@ public class ClaudePdfParsingService : IPdfParsingService
                         Amount = templateIngredient.Amount,
                         Unit = templateIngredient.Unit,
                         Category = templateIngredient.Category
-                    });
-                }
-
-                meal.Options.Add(option);
-            }
-
-            day.Meals.Add(meal);
-        }
-
-        return day;
-    }
-
-    private static MealPlan FallbackParse(IReadOnlyList<string> pages, string fileName, Guid userId)
-    {
-        // Use the old regex-based parser as fallback
-        var parser = new MealPlanParser();
-        var parsedPlan = parser.Parse(pages);
-        var normalizer = new IngredientNormalizer();
-
-        var fallbackService = new PdfParsingService();
-        // Reconstruct via the old service — we call its internal logic
-        return BuildFallbackMealPlan(parsedPlan, normalizer, fileName, userId);
-    }
-
-    private static MealPlan BuildFallbackMealPlan(ParsedMealPlan parsedPlan, IngredientNormalizer normalizer, string fileName, Guid userId)
-    {
-        var mealPlan = new MealPlan
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Name = Path.GetFileNameWithoutExtension(fileName),
-            SourceFileName = fileName,
-            ImportedAt = DateTime.UtcNow,
-            IsActive = true
-        };
-
-        var templateDay = BuildFallbackDay(parsedPlan, normalizer, 0, mealPlan.Id);
-        mealPlan.Days.Add(templateDay);
-
-        for (int i = 1; i <= 6; i++)
-        {
-            mealPlan.Days.Add(CloneDay(templateDay, i, mealPlan.Id));
-        }
-
-        return mealPlan;
-    }
-
-    private static MealPlanDay BuildFallbackDay(ParsedMealPlan parsedPlan, IngredientNormalizer normalizer, int dayOfWeek, Guid mealPlanId)
-    {
-        var day = new MealPlanDay
-        {
-            Id = Guid.NewGuid(),
-            MealPlanId = mealPlanId,
-            DayOfWeek = dayOfWeek
-        };
-
-        foreach (var parsedMeal in parsedPlan.Meals)
-        {
-            var meal = new Meal
-            {
-                Id = Guid.NewGuid(),
-                MealPlanDayId = day.Id,
-                MealType = parsedMeal.Type,
-                SortOrder = (int)parsedMeal.Type
-            };
-
-            var sortOrder = 0;
-            foreach (var parsedOption in parsedMeal.Options)
-            {
-                var option = new MealOption
-                {
-                    Id = Guid.NewGuid(),
-                    MealId = meal.Id,
-                    Name = parsedOption.Description.Length > 50
-                        ? parsedOption.Description[..50] + "..."
-                        : parsedOption.Description,
-                    Description = parsedOption.Description,
-                    IsSelected = sortOrder == 0,
-                    SortOrder = sortOrder++
-                };
-
-                foreach (var parsedIngredient in parsedOption.Ingredients)
-                {
-                    var (englishName, category) = normalizer.Normalize(parsedIngredient.NamePt);
-                    option.Ingredients.Add(new Ingredient
-                    {
-                        Id = Guid.NewGuid(),
-                        MealOptionId = option.Id,
-                        Name = englishName,
-                        NamePt = parsedIngredient.NamePt,
-                        Amount = parsedIngredient.Amount,
-                        Unit = parsedIngredient.Unit,
-                        Category = category
                     });
                 }
 

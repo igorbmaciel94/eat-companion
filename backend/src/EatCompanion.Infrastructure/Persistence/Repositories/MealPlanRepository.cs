@@ -74,6 +74,18 @@ public class MealPlanRepository : IMealPlanRepository
             .ToListAsync();
     }
 
+    public async Task<Ingredient?> GetIngredientAsync(Guid ingredientId)
+    {
+        return await _context.Set<Ingredient>()
+            .Include(i => i.MealOption)
+            .FirstOrDefaultAsync(i => i.Id == ingredientId);
+    }
+
+    public void DeleteIngredient(Ingredient ingredient)
+    {
+        _context.Set<Ingredient>().Remove(ingredient);
+    }
+
     public async Task AddAsync(MealPlan mealPlan)
     {
         await _context.MealPlans.AddAsync(mealPlan);

@@ -46,6 +46,7 @@ public class GenerateGroceryListCommandHandler
             groceryList.Items.Select(i => new GroceryItemDto(
                 i.Id,
                 i.Name,
+                i.NamePt,
                 i.Category,
                 i.TotalAmount,
                 i.Unit,

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Icon } from '../../../components/ui/Icon';
 import { useGroceryList } from '../hooks/useGroceryList';
 
@@ -6,10 +7,30 @@ const categoryColors: Record<string, string> = {
   Protein: 'bg-error',
   Dairy: 'bg-tertiary',
   Grains: 'bg-secondary',
+  OilsAndCondiments: 'bg-outline',
+  Other: 'bg-outline-variant',
 };
 
+const UNIT_LABELS: Record<string, string> = {
+  Grams: 'g',
+  Ml: 'ml',
+  Tablespoon: 'tbsp',
+  Teaspoon: 'tsp',
+  Slice: 'slices',
+  Units: '',
+};
+
+function formatAmount(amount?: number, unit?: string): string {
+  if (!amount || amount <= 0) return '';
+  const unitLabel = unit ? UNIT_LABELS[unit] ?? unit : '';
+  const rounded = Number.isInteger(amount) ? amount : Math.round(amount * 10) / 10;
+  if (!unitLabel) return `${rounded}x`;
+  return `${rounded}${unitLabel}`;
+}
+
 export function GroceryListPage() {
-  const { data, checkedItems, toggleItem, generate, generating, hasActivePlan } = useGroceryList();
+  const { data, checkedItems, toggleItem, generate, generating, copyList, hasActivePlan } = useGroceryList();
+  const [copied, setCopied] = useState(false);
 
   if (!hasActivePlan) {
     return (
@@ -93,15 +114,24 @@ export function GroceryListPage() {
         </div>
       </div>
 
-      {/* Regenerate button */}
-      <button
-        onClick={generate}
-        disabled={generating}
-        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-outline-variant rounded-2xl py-3 text-on-surface-variant text-sm font-medium transition-colors hover:border-primary hover:text-primary mb-6 disabled:opacity-50"
-      >
-        <Icon name="refresh" size={18} />
-        {generating ? 'Regenerating...' : 'Regenerate List'}
-      </button>
+      {/* Action buttons */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={generate}
+          disabled={generating}
+          className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-outline-variant rounded-2xl py-3 text-on-surface-variant text-sm font-medium transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+        >
+          <Icon name="refresh" size={18} />
+          {generating ? 'Regenerating...' : 'Regenerate'}
+        </button>
+        <button
+          onClick={() => { copyList(); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          className="flex items-center justify-center gap-2 border-2 border-outline-variant rounded-2xl py-3 px-5 text-on-surface-variant text-sm font-medium transition-colors hover:border-primary hover:text-primary"
+        >
+          <Icon name={copied ? 'check' : 'content_copy'} size={18} />
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
 
       {/* Categories */}
       <div className="space-y-6">
@@ -113,7 +143,7 @@ export function GroceryListPage() {
                 className={`w-1 h-5 rounded-full ${categoryColors[category.name] ?? 'bg-primary'}`}
               />
               <h2 className="font-headline font-semibold text-on-surface text-base">
-                {category.name}
+                {category.name === 'OilsAndCondiments' ? 'Oils & Condiments' : category.name}
               </h2>
               <span className="text-on-surface-variant text-xs font-label">
                 {category.items.length} items
@@ -142,14 +172,25 @@ export function GroceryListPage() {
                       )}
                     </div>
                     <span
-                      className={`text-sm transition-all ${
+                      className={`text-sm transition-all flex-1 ${
                         isChecked
                           ? 'line-through text-on-surface-variant'
                           : 'text-on-surface'
                       }`}
                     >
-                      {item.name}
+                      {item.namePt || item.name}
                     </span>
+                    {formatAmount(item.totalAmount, item.unit) && (
+                      <span
+                        className={`text-xs font-label px-2 py-0.5 rounded-full flex-shrink-0 ${
+                          isChecked
+                            ? 'bg-surface-container text-on-surface-variant'
+                            : 'bg-primary-container text-on-primary-container'
+                        }`}
+                      >
+                        {formatAmount(item.totalAmount, item.unit)}
+                      </span>
+                    )}
                   </button>
                 );
               })}

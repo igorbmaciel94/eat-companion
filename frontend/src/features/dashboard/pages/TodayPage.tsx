@@ -50,7 +50,21 @@ export function TodayPage() {
         const { data } = await mealPlansApi.getDay(activePlanId, today);
 
         if (data && data.meals && data.meals.length > 0) {
-          const apiMeals: Meal[] = data.meals.map((m: { id: string; type?: string; mealType?: number; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
+          const mealOrder: Record<string | number, number> = {
+            0: 0, Breakfast: 0,
+            1: 1, MorningSnack: 1,
+            2: 2, Lunch: 2,
+            3: 3, AfternoonSnack: 3,
+            4: 4, Dinner: 4,
+            5: 5, EveningSnack: 5,
+            6: 6, Snack: 6,
+          };
+          const sorted = [...data.meals].sort((a: { mealType?: number | string }, b: { mealType?: number | string }) => {
+            const aO = mealOrder[a.mealType ?? 0] ?? 99;
+            const bO = mealOrder[b.mealType ?? 0] ?? 99;
+            return aO - bO;
+          });
+          const apiMeals: Meal[] = sorted.map((m: { id: string; type?: string; mealType?: number; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
             return {
               type: MEALTYPE_LABELS[m.mealType ?? 0] || m.type || 'Meal',

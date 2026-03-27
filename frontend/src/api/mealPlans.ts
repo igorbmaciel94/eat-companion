@@ -15,4 +15,16 @@ export const mealPlansApi = {
     client.get<DailySummary>(`/meal-plans/${id}/days/${date}`),
   selectOption: (planId: string, mealId: string, optionId: string) =>
     client.put(`/meal-plans/${planId}/meals/${mealId}/options/${optionId}/select`),
+
+  updateOption: (planId: string, optionId: string, data: { name?: string; description?: string; calories?: number; proteinGrams?: number; carbsGrams?: number; fatGrams?: number }) =>
+    client.put(`/meal-plans/${planId}/options/${optionId}`, data),
+
+  addIngredient: (planId: string, optionId: string, data: { name: string; namePt?: string; amount: number; unit: string; category: string }) =>
+    client.post(`/meal-plans/${planId}/options/${optionId}/ingredients`, data),
+
+  updateIngredient: (planId: string, ingredientId: string, data: { name: string; namePt?: string; amount: number; unit: string; category: string }) =>
+    client.put(`/meal-plans/${planId}/ingredients/${ingredientId}`, data),
+
+  deleteIngredient: (planId: string, ingredientId: string) =>
+    client.delete(`/meal-plans/${planId}/ingredients/${ingredientId}`),
 };

@@ -23,7 +23,8 @@ public class GroceryListGenerator : IGroceryListGenerator
         if (totalDays <= 0) totalDays = 1;
 
         // Collect all selected ingredients across the date range
-        var ingredientAggregator = new Dictionary<(string Name, IngredientCategory Category, UnitOfMeasure Unit), decimal>();
+        // Key: (display name, category, unit) → (total amount, english name, portuguese name)
+        var ingredientAggregator = new Dictionary<(string Key, IngredientCategory Category, UnitOfMeasure Unit), (decimal Amount, string Name, string? NamePt)>();
 
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
@@ -45,27 +46,30 @@ public class GroceryListGenerator : IGroceryListGenerator
 
                 foreach (var ingredient in selectedOption.Ingredients)
                 {
-                    var key = (ingredient.Name, ingredient.Category, ingredient.Unit);
-                    if (ingredientAggregator.ContainsKey(key))
+                    // Use Portuguese name as key for better grouping
+                    var displayKey = (ingredient.NamePt ?? ingredient.Name).ToLowerInvariant().Trim();
+                    var key = (displayKey, ingredient.Category, ingredient.Unit);
+                    if (ingredientAggregator.TryGetValue(key, out var existing))
                     {
-                        ingredientAggregator[key] += ingredient.Amount;
+                        ingredientAggregator[key] = (existing.Amount + ingredient.Amount, existing.Name, existing.NamePt ?? ingredient.NamePt);
                     }
                     else
                     {
-                        ingredientAggregator[key] = ingredient.Amount;
+                        ingredientAggregator[key] = (ingredient.Amount, ingredient.Name, ingredient.NamePt);
                     }
                 }
             }
         }
 
         // Create grocery items from aggregated ingredients
-        foreach (var ((name, category, unit), totalAmount) in ingredientAggregator)
+        foreach (var ((_, category, unit), (totalAmount, name, namePt)) in ingredientAggregator)
         {
             groceryList.Items.Add(new GroceryItem
             {
                 Id = Guid.NewGuid(),
                 GroceryListId = groceryList.Id,
                 Name = name,
+                NamePt = namePt,
                 Category = category,
                 TotalAmount = totalAmount,
                 Unit = unit,

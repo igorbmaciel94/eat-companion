@@ -40,7 +40,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
+builder.Services.AddScoped<IPdfParsingService, ClaudePdfParsingService>();
 builder.Services.AddScoped<IGroceryListGenerator, GroceryListGenerator>();
 builder.Services.AddScoped<INutritionCalculator, NutritionCalculator>();
 
@@ -53,6 +53,10 @@ builder.Services.AddScoped<GetMealPlanQueryHandler>();
 builder.Services.AddScoped<GetDailySummaryQueryHandler>();
 builder.Services.AddScoped<SelectMealOptionCommandHandler>();
 builder.Services.AddScoped<ImportMealPlanCommandHandler>();
+builder.Services.AddScoped<UpdateMealOptionCommandHandler>();
+builder.Services.AddScoped<AddIngredientCommandHandler>();
+builder.Services.AddScoped<UpdateIngredientCommandHandler>();
+builder.Services.AddScoped<DeleteIngredientCommandHandler>();
 builder.Services.AddScoped<LogMealCommandHandler>();
 builder.Services.AddScoped<GetMealLogsQueryHandler>();
 builder.Services.AddScoped<GetGroceryListQueryHandler>();

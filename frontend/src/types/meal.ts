@@ -1,7 +1,11 @@
 export interface Ingredient {
+  id?: string;
   name: string;
-  quantity: number;
+  namePt?: string;
+  amount?: number;
+  quantity?: number;
   unit: string;
+  category?: string;
   calories?: number;
   protein?: number;
   carbs?: number;

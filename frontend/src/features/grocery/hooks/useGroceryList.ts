@@ -3,9 +3,17 @@ import { groceryListsApi } from '../../../api/groceryLists';
 import { useUiStore } from '../../../stores/uiStore';
 import { useAuthStore } from '../../../stores/authStore';
 
+interface GroceryItemView {
+  id: string;
+  name: string;
+  namePt?: string;
+  totalAmount?: number;
+  unit?: string;
+}
+
 interface Category {
   name: string;
-  items: { id: string; name: string }[];
+  items: GroceryItemView[];
 }
 
 interface GroceryListData {
@@ -15,6 +23,15 @@ interface GroceryListData {
   categories: Category[];
   listId?: string;
 }
+
+const PT_UNIT_LABELS: Record<string, string> = {
+  Grams: 'g',
+  Ml: 'ml',
+  Tablespoon: ' colheres sopa',
+  Teaspoon: ' colheres chá',
+  Slice: ' fatias',
+  Units: ' unidades',
+};
 
 const emptyData: GroceryListData = {
   totalItems: 0,
@@ -43,13 +60,19 @@ export function useGroceryList() {
         const { data: fullList } = await groceryListsApi.getById(listData.id);
 
         if (fullList && fullList.items && fullList.items.length > 0) {
-          const categoryMap = new Map<string, { id: string; name: string }[]>();
+          const categoryMap = new Map<string, GroceryItemView[]>();
           const checked = new Set<string>();
 
           for (const item of fullList.items) {
             const cat = item.category || 'Other';
             if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-            categoryMap.get(cat)!.push({ id: item.id, name: item.name });
+            categoryMap.get(cat)!.push({
+              id: item.id,
+              name: item.name,
+              namePt: item.namePt,
+              totalAmount: item.totalAmount,
+              unit: item.unit,
+            });
             if (item.isChecked || item.checked) checked.add(item.name);
           }
 
@@ -96,6 +119,27 @@ export function useGroceryList() {
   const checkedCount = checkedItems.size;
   const progress = data.totalItems > 0 ? (checkedCount / data.totalItems) * 100 : 0;
 
+  const copyList = useCallback(() => {
+    const lines: string[] = [];
+    for (const cat of data.categories) {
+      for (const item of cat.items) {
+        const displayName = item.namePt || item.name;
+        const amount = item.totalAmount && item.totalAmount > 0 ? item.totalAmount : null;
+        const unitLabel = item.unit ? PT_UNIT_LABELS[item.unit] ?? item.unit : '';
+        const checked = checkedItems.has(item.name);
+        const prefix = checked ? '- [x]' : '- [ ]';
+        if (amount && unitLabel) {
+          lines.push(`${prefix} ${displayName} ${amount}${unitLabel}`);
+        } else if (amount) {
+          lines.push(`${prefix} ${displayName} ${amount}x`);
+        } else {
+          lines.push(`${prefix} ${displayName}`);
+        }
+      }
+    }
+    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+  }, [data, checkedItems]);
+
   return {
     data,
     checkedItems,
@@ -104,6 +148,7 @@ export function useGroceryList() {
     progress,
     generate,
     generating,
+    copyList,
     hasActivePlan: !!activePlanId,
   };
 }

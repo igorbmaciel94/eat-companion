@@ -1,9 +1,14 @@
 using System.Security.Claims;
 using EatCompanion.Application.UseCases.MealPlans;
+using EatCompanion.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EatCompanion.Api.Controllers;
+
+public record UpdateOptionRequest(string? Name, string? Description, int? Calories, decimal? ProteinGrams, decimal? CarbsGrams, decimal? FatGrams);
+public record AddIngredientRequest(string Name, string? NamePt, decimal Amount, UnitOfMeasure Unit, IngredientCategory Category);
+public record UpdateIngredientRequest(string Name, string? NamePt, decimal Amount, UnitOfMeasure Unit, IngredientCategory Category);
 
 [ApiController]
 [Authorize]
@@ -15,19 +20,31 @@ public class MealPlansController : ControllerBase
     private readonly GetDailySummaryQueryHandler _getDailySummaryHandler;
     private readonly SelectMealOptionCommandHandler _selectOptionHandler;
     private readonly ImportMealPlanCommandHandler _importHandler;
+    private readonly UpdateMealOptionCommandHandler _updateOptionHandler;
+    private readonly AddIngredientCommandHandler _addIngredientHandler;
+    private readonly UpdateIngredientCommandHandler _updateIngredientHandler;
+    private readonly DeleteIngredientCommandHandler _deleteIngredientHandler;
 
     public MealPlansController(
         GetMealPlansQueryHandler getMealPlansHandler,
         GetMealPlanQueryHandler getMealPlanHandler,
         GetDailySummaryQueryHandler getDailySummaryHandler,
         SelectMealOptionCommandHandler selectOptionHandler,
-        ImportMealPlanCommandHandler importHandler)
+        ImportMealPlanCommandHandler importHandler,
+        UpdateMealOptionCommandHandler updateOptionHandler,
+        AddIngredientCommandHandler addIngredientHandler,
+        UpdateIngredientCommandHandler updateIngredientHandler,
+        DeleteIngredientCommandHandler deleteIngredientHandler)
     {
         _getMealPlansHandler = getMealPlansHandler;
         _getMealPlanHandler = getMealPlanHandler;
         _getDailySummaryHandler = getDailySummaryHandler;
         _selectOptionHandler = selectOptionHandler;
         _importHandler = importHandler;
+        _updateOptionHandler = updateOptionHandler;
+        _addIngredientHandler = addIngredientHandler;
+        _updateIngredientHandler = updateIngredientHandler;
+        _deleteIngredientHandler = deleteIngredientHandler;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
@@ -68,6 +85,43 @@ public class MealPlansController : ControllerBase
     public async Task<IActionResult> SelectOption(Guid id, Guid mealId, Guid optionId)
     {
         await _selectOptionHandler.Handle(new SelectMealOptionCommand(id, mealId, optionId, GetUserId()));
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/options/{optionId:guid}")]
+    public async Task<IActionResult> UpdateOption(Guid id, Guid optionId, [FromBody] UpdateOptionRequest request)
+    {
+        await _updateOptionHandler.Handle(new UpdateMealOptionCommand(
+            id, optionId, request.Name, request.Description,
+            request.Calories, request.ProteinGrams, request.CarbsGrams, request.FatGrams,
+            GetUserId()));
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/options/{optionId:guid}/ingredients")]
+    public async Task<IActionResult> AddIngredient(Guid id, Guid optionId, [FromBody] AddIngredientRequest request)
+    {
+        await _addIngredientHandler.Handle(new AddIngredientCommand(
+            id, optionId, request.Name, request.NamePt,
+            request.Amount, request.Unit, request.Category,
+            GetUserId()));
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/ingredients/{ingredientId:guid}")]
+    public async Task<IActionResult> UpdateIngredient(Guid id, Guid ingredientId, [FromBody] UpdateIngredientRequest request)
+    {
+        await _updateIngredientHandler.Handle(new UpdateIngredientCommand(
+            id, ingredientId, request.Name, request.NamePt,
+            request.Amount, request.Unit, request.Category,
+            GetUserId()));
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/ingredients/{ingredientId:guid}")]
+    public async Task<IActionResult> DeleteIngredient(Guid id, Guid ingredientId)
+    {
+        await _deleteIngredientHandler.Handle(new DeleteIngredientCommand(id, ingredientId, GetUserId()));
         return NoContent();
     }
 }
