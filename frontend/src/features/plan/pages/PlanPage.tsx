@@ -8,7 +8,13 @@ import type { Meal, MealOption } from '../../../types';
 
 type ViewMode = 'today' | 'weekly';
 
-const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+const MEALTYPE_LABELS: Record<number | string, string> = {
+  0: 'Breakfast', 1: 'Morning Snack', 2: 'Lunch', 3: 'Afternoon Snack',
+  4: 'Dinner', 5: 'Evening Snack', 6: 'Snack',
+  Breakfast: 'Breakfast', MorningSnack: 'Morning Snack', Lunch: 'Lunch',
+  AfternoonSnack: 'Afternoon Snack', Dinner: 'Dinner', EveningSnack: 'Evening Snack',
+  Snack: 'Snack',
+};
 
 function getOptionName(option: MealOption): string {
   if (option.name) return option.name;
@@ -216,7 +222,7 @@ export function PlanPage() {
           <div className="space-y-6 mb-6">
             {meals.map((meal) => {
               const mealLabel =
-                MEALTYPE_LABELS[typeof meal.mealType === 'number' ? meal.mealType : 0] ||
+                MEALTYPE_LABELS[meal.mealType ?? 0] ||
                 meal.type ||
                 'Meal';
 

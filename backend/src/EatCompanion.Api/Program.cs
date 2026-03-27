@@ -40,7 +40,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
+builder.Services.AddScoped<IPdfParsingService, ClaudePdfParsingService>();
 builder.Services.AddScoped<IGroceryListGenerator, GroceryListGenerator>();
 builder.Services.AddScoped<INutritionCalculator, NutritionCalculator>();
 
@@ -116,7 +116,12 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
 
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

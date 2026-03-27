@@ -21,7 +21,13 @@ interface Meal {
 }
 
 
-const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+const MEALTYPE_LABELS: Record<number | string, string> = {
+  0: 'Breakfast', 1: 'Morning Snack', 2: 'Lunch', 3: 'Afternoon Snack',
+  4: 'Dinner', 5: 'Evening Snack', 6: 'Snack',
+  Breakfast: 'Breakfast', MorningSnack: 'Morning Snack', Lunch: 'Lunch',
+  AfternoonSnack: 'Afternoon Snack', Dinner: 'Dinner', EveningSnack: 'Evening Snack',
+  Snack: 'Snack',
+};
 
 export function TodayPage() {
   const navigate = useNavigate();
@@ -47,7 +53,7 @@ export function TodayPage() {
           const apiMeals: Meal[] = data.meals.map((m: { id: string; type?: string; mealType?: number; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
             return {
-              type: MEALTYPE_LABELS[typeof m.mealType === 'number' ? m.mealType : 0] || m.type || 'Meal',
+              type: MEALTYPE_LABELS[m.mealType ?? 0] || m.type || 'Meal',
               name: selected?.name || selected?.description?.split('\n')[0] || 'Meal',
               calories: selected?.calories || 0,
               protein: selected?.proteinGrams || selected?.protein || 0,
