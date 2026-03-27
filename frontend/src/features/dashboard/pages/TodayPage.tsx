@@ -34,10 +34,15 @@ const MEALTYPE_NUMBER: Record<string, number> = {
   Dinner: 4, EveningSnack: 5, Snack: 6,
 };
 
-function getMealTypeNumber(mt: number | string | undefined): number {
-  if (typeof mt === 'number') return mt;
-  if (typeof mt === 'string') return MEALTYPE_NUMBER[mt] ?? 0;
-  return 0;
+const MEALTYPE_STRING: Record<number, string> = {
+  0: 'Breakfast', 1: 'MorningSnack', 2: 'Lunch', 3: 'AfternoonSnack',
+  4: 'Dinner', 5: 'EveningSnack', 6: 'Snack',
+};
+
+function getMealTypeString(mt: number | string | undefined): string {
+  if (typeof mt === 'string' && MEALTYPE_NUMBER[mt] !== undefined) return mt;
+  if (typeof mt === 'number') return MEALTYPE_STRING[mt] ?? 'Breakfast';
+  return 'Breakfast';
 }
 
 export function TodayPage() {
@@ -99,7 +104,21 @@ export function TodayPage() {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
 
             // Hydrate status from backend logs
-            const log = logs.find((l: { mealOptionId?: string }) => l.mealOptionId === selected?.id);
+            // Primary match: by mealOptionId (case-insensitive GUID comparison)
+            const selectedId = selected?.id?.toLowerCase();
+            const mealTypeStr = getMealTypeString(m.mealType);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let log = logs.find((l: any) =>
+              l.mealOptionId && selectedId && l.mealOptionId.toLowerCase() === selectedId
+            );
+            // Fallback match: by mealType (for logs where mealOptionId might differ)
+            if (!log) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              log = logs.find((l: any) => {
+                const logMealType = typeof l.mealType === 'string' ? l.mealType : MEALTYPE_STRING[l.mealType] ?? '';
+                return logMealType === mealTypeStr;
+              });
+            }
             let status: MealStatus = 'pending';
             if (log) {
               const logStatus = typeof log.status === 'string' ? log.status : '';
@@ -162,9 +181,9 @@ export function TodayPage() {
         } else {
           await mealLogsApi.log({
             date: new Date().toISOString().split('T')[0],
-            mealType: getMealTypeNumber(meal.mealType),
+            mealType: getMealTypeString(meal.mealType),
             mealOptionId: meal.optionId,
-            status: 0, // Completed
+            status: 'Completed',
           });
         }
       } catch { /* ignore logging errors */ }
@@ -191,9 +210,9 @@ export function TodayPage() {
         } else {
           await mealLogsApi.log({
             date: new Date().toISOString().split('T')[0],
-            mealType: getMealTypeNumber(meal.mealType),
+            mealType: getMealTypeString(meal.mealType),
             mealOptionId: meal.optionId,
-            status: 1, // Skipped
+            status: 'Skipped',
           });
         }
       } catch { /* ignore logging errors */ }

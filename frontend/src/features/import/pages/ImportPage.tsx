@@ -29,6 +29,8 @@ export function ImportPage() {
 
   const startPolling = useCallback((id: string) => {
     cleanupPolling();
+    // Save to store so global banner can track it too
+    useUiStore.getState().setPendingImportJobId(id);
     let fakeProg = 30;
 
     pollIntervalRef.current = setInterval(async () => {
@@ -44,11 +46,13 @@ export function ImportPage() {
           cleanupPolling();
           setProgress(100);
           useUiStore.getState().setActiveMealPlanId(data.mealPlanId);
+          useUiStore.getState().clearPendingImportJobId();
           setTimeout(() => navigate('/plan'), 600);
         }
 
         if (data.status === 'Failed') {
           cleanupPolling();
+          useUiStore.getState().clearPendingImportJobId();
           setIsProcessing(false);
           setProgress(0);
           setError(data.errorMessage || 'Import failed. Please try again.');
@@ -58,6 +62,18 @@ export function ImportPage() {
       }
     }, 3000);
   }, [cleanupPolling, navigate]);
+
+  // Resume polling if returning to this page with a pending import
+  useEffect(() => {
+    const pendingJobId = useUiStore.getState().pendingImportJobId;
+    if (pendingJobId && !isProcessing) {
+      setIsProcessing(true);
+      setProgress(30);
+      setFileName('Resuming...');
+      startPolling(pendingJobId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startImport = async (file: File) => {
     setFileName(file.name);
@@ -162,7 +178,7 @@ export function ImportPage() {
             </button>
             <button
               onClick={handleCancelReplace}
-              className="flex-1 border border-outline-variant text-on-surface-variant rounded-full py-2.5 text-sm font-medium"
+              className="flex-1 bg-surface-container-lowest text-on-surface border border-outline rounded-full py-2.5 text-sm font-medium"
             >
               Cancel
             </button>
