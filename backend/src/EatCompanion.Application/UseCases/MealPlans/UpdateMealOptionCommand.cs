@@ -50,12 +50,18 @@ public class UpdateMealOptionCommandHandler
 
         foreach (var option in matchingOptions)
         {
-            if (command.Name is not null) option.Name = command.Name;
-            if (command.Description is not null) option.Description = command.Description;
-            if (command.Calories.HasValue) option.Calories = command.Calories;
-            if (command.ProteinGrams.HasValue) option.ProteinGrams = command.ProteinGrams;
-            if (command.CarbsGrams.HasValue) option.CarbsGrams = command.CarbsGrams;
-            if (command.FatGrams.HasValue) option.FatGrams = command.FatGrams;
+            if (command.Name is not null)
+                option.Name = command.Name;
+            if (command.Description is not null)
+                option.Description = command.Description;
+            if (command.Calories.HasValue)
+                option.Calories = command.Calories;
+            if (command.ProteinGrams.HasValue)
+                option.ProteinGrams = command.ProteinGrams;
+            if (command.CarbsGrams.HasValue)
+                option.CarbsGrams = command.CarbsGrams;
+            if (command.FatGrams.HasValue)
+                option.FatGrams = command.FatGrams;
 
             _mealPlanRepository.UpdateOption(option);
         }

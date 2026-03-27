@@ -56,7 +56,8 @@ public class MealPlanParser
             for (int idx = 0; idx < sectionStarts.Count; idx++)
             {
                 var other = sectionStarts[idx];
-                if (other.Index == item.Index && other.Type == item.Type && other.HeaderText == item.HeaderText) continue;
+                if (other.Index == item.Index && other.Type == item.Type && other.HeaderText == item.HeaderText)
+                    continue;
                 // If another header fully contains this one's position range
                 if (other.Index <= item.Index &&
                     other.Index + other.HeaderText.Length >= item.Index + item.HeaderText.Length &&
@@ -329,19 +330,28 @@ public class MealPlanParser
         var cleaned = lines.Where(line =>
         {
             var trimmed = line.Trim();
-            if (string.IsNullOrWhiteSpace(trimmed)) return true;
+            if (string.IsNullOrWhiteSpace(trimmed))
+                return true;
             // Remove lines with nutritionist name/number patterns (e.g., "Teresa 5235N", "Teresa Valadar 5235N")
-            if (Regex.IsMatch(trimmed, @"Teresa\b", RegexOptions.IgnoreCase)) return false;
-            if (Regex.IsMatch(trimmed, @"^\d+N\s*$")) return false;
+            if (Regex.IsMatch(trimmed, @"Teresa\b", RegexOptions.IgnoreCase))
+                return false;
+            if (Regex.IsMatch(trimmed, @"^\d+N\s*$"))
+                return false;
             // Remove recommendation-style numbered items (e.g., "1- Beber pelo menos 2L...")
-            if (Regex.IsMatch(trimmed, @"^\d+\s*[-–]\s+\w", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"^\d+\s*[-–]\s+\w", RegexOptions.IgnoreCase))
+                return false;
             // Remove lines with nutritional reference info (e.g., "150g de peixe: corresponde a...")
-            if (trimmed.Contains("corresponde a", StringComparison.OrdinalIgnoreCase)) return false;
+            if (trimmed.Contains("corresponde a", StringComparison.OrdinalIgnoreCase))
+                return false;
             // Remove advisory text patterns
-            if (Regex.IsMatch(trimmed, @"\bimportante\s+manter\b", RegexOptions.IgnoreCase)) return false;
-            if (Regex.IsMatch(trimmed, @"\bobrigat[óo]rio\b", RegexOptions.IgnoreCase)) return false;
-            if (Regex.IsMatch(trimmed, @"\bApesar\s+a\s+sopa\b", RegexOptions.IgnoreCase)) return false;
-            if (Regex.IsMatch(trimmed, @"\bsempre\s+na\s+Valadar\b", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"\bimportante\s+manter\b", RegexOptions.IgnoreCase))
+                return false;
+            if (Regex.IsMatch(trimmed, @"\bobrigat[óo]rio\b", RegexOptions.IgnoreCase))
+                return false;
+            if (Regex.IsMatch(trimmed, @"\bApesar\s+a\s+sopa\b", RegexOptions.IgnoreCase))
+                return false;
+            if (Regex.IsMatch(trimmed, @"\bsempre\s+na\s+Valadar\b", RegexOptions.IgnoreCase))
+                return false;
             return true;
         });
         return string.Join("\n", cleaned);

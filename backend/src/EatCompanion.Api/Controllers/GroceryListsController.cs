@@ -42,7 +42,8 @@ public class GroceryListsController : ControllerBase
     public async Task<IActionResult> GetLatest([FromQuery] Guid mealPlanId)
     {
         var result = await _getLatestHandler.Handle(new GetLatestGroceryListQuery(mealPlanId));
-        if (result is null) return NotFound();
+        if (result is null)
+            return NotFound();
         return Ok(result);
     }
 

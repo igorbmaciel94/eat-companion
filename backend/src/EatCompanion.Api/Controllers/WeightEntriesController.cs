@@ -57,7 +57,8 @@ public class WeightEntriesController : ControllerBase
     {
         var command = new UpdateWeightEntryCommand(GetUserId(), id, request.WeightKg, request.Notes);
         var result = await _updateHandler.Handle(command);
-        if (result is null) return NotFound();
+        if (result is null)
+            return NotFound();
         return Ok(result);
     }
 

@@ -156,8 +156,10 @@ public class ClaudePdfParsingService : IPdfParsingService
         if (json.StartsWith("```"))
         {
             var firstNewline = json.IndexOf('\n');
-            if (firstNewline > 0) json = json[(firstNewline + 1)..];
-            if (json.EndsWith("```")) json = json[..^3];
+            if (firstNewline > 0)
+                json = json[(firstNewline + 1)..];
+            if (json.EndsWith("```"))
+                json = json[..^3];
             json = json.Trim();
         }
 

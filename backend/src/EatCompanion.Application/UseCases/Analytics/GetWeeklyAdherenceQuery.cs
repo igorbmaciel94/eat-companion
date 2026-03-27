@@ -47,7 +47,8 @@ public class GetWeeklyAdherenceQueryHandler
                 decimal proteinConsumed = 0, carbsConsumed = 0, fatConsumed = 0;
                 foreach (var log in completedDayLogs)
                 {
-                    if (log.MealOptionId == null) continue;
+                    if (log.MealOptionId == null)
+                        continue;
                     var option = plans
                         .SelectMany(p => p.Days)
                         .SelectMany(d => d.Meals)

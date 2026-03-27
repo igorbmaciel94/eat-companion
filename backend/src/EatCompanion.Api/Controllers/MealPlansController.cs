@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using System.Threading.Channels;
+using EatCompanion.Application.Common;
 using EatCompanion.Application.DTOs;
 using EatCompanion.Application.UseCases.MealPlans;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Application.Common;
 using EatCompanion.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

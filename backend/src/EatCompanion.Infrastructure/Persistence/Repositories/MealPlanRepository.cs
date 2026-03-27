@@ -61,7 +61,8 @@ public class MealPlanRepository : IMealPlanRepository
                     .ThenInclude(o => o.Ingredients)
             .FirstOrDefaultAsync(d => d.MealPlanId == mealPlanId && d.Date == date);
 
-        if (day is not null) return day;
+        if (day is not null)
+            return day;
 
         // Fall back to matching by DayOfWeek (for template-based plans)
         var dayOfWeek = (int)date.DayOfWeek;

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using EatCompanion.Api.Middleware;
+using EatCompanion.Application.Common;
 using EatCompanion.Application.Interfaces;
 using EatCompanion.Application.UseCases.Analytics;
 using EatCompanion.Application.UseCases.Auth;
@@ -10,7 +11,6 @@ using EatCompanion.Application.UseCases.MealPlans;
 using EatCompanion.Application.UseCases.Profile;
 using EatCompanion.Application.UseCases.WeightEntries;
 using EatCompanion.Application.Validators;
-using EatCompanion.Application.Common;
 using EatCompanion.Domain.Interfaces;
 using EatCompanion.Infrastructure.Persistence;
 using EatCompanion.Infrastructure.Persistence.Repositories;

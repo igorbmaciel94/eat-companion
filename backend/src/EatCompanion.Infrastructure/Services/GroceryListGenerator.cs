@@ -20,7 +20,8 @@ public class GroceryListGenerator : IGroceryListGenerator
 
         // Calculate how many days in the range
         var totalDays = endDate.DayNumber - startDate.DayNumber + 1;
-        if (totalDays <= 0) totalDays = 1;
+        if (totalDays <= 0)
+            totalDays = 1;
 
         // Collect all selected ingredients across the date range
         // Key: (display name, category, unit) → (total amount, english name, portuguese name)
@@ -34,7 +35,8 @@ public class GroceryListGenerator : IGroceryListGenerator
             var mealPlanDay = mealPlan.Days.FirstOrDefault(d => d.DayOfWeek == dayOfWeek)
                               ?? mealPlan.Days.FirstOrDefault(); // fallback to template
 
-            if (mealPlanDay is null) continue;
+            if (mealPlanDay is null)
+                continue;
 
             foreach (var meal in mealPlanDay.Meals)
             {
@@ -42,7 +44,8 @@ public class GroceryListGenerator : IGroceryListGenerator
                 var selectedOption = meal.Options.FirstOrDefault(o => o.IsSelected)
                                      ?? meal.Options.FirstOrDefault();
 
-                if (selectedOption is null) continue;
+                if (selectedOption is null)
+                    continue;
 
                 foreach (var ingredient in selectedOption.Ingredients)
                 {

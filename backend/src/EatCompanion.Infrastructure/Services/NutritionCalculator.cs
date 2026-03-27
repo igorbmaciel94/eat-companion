@@ -20,7 +20,8 @@ public class NutritionCalculator : INutritionCalculator
             var selectedOption = meal.Options.FirstOrDefault(o => o.IsSelected)
                                  ?? meal.Options.FirstOrDefault();
 
-            if (selectedOption is null) continue;
+            if (selectedOption is null)
+                continue;
 
             consumedCalories += selectedOption.Calories ?? 0;
             consumedProtein += selectedOption.ProteinGrams ?? 0;

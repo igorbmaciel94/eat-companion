@@ -49,7 +49,8 @@ public class ImportJobProcessor : BackgroundService
         var mealPlanRepo = scope.ServiceProvider.GetRequiredService<IMealPlanRepository>();
 
         var job = await context.ImportJobs.FirstOrDefaultAsync(j => j.Id == jobId, ct);
-        if (job is null) return;
+        if (job is null)
+            return;
 
         job.Status = ImportJobStatus.Processing;
         await context.SaveChangesAsync(ct);
@@ -82,7 +83,8 @@ public class ImportJobProcessor : BackgroundService
         finally
         {
             // Cleanup temp file
-            try { if (File.Exists(job.TempFilePath)) File.Delete(job.TempFilePath); }
+            try
+            { if (File.Exists(job.TempFilePath)) File.Delete(job.TempFilePath); }
             catch { /* ignore cleanup errors */ }
         }
     }

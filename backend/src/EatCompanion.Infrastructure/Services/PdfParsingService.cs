@@ -146,7 +146,8 @@ public class PdfParsingService : IPdfParsingService
 
     private static string CapitalizeFirst(string s)
     {
-        if (string.IsNullOrEmpty(s)) return s;
+        if (string.IsNullOrEmpty(s))
+            return s;
         // Remove quantities at the start like "arroz/massa/batata"
         s = s.Trim();
         return char.ToUpper(s[0]) + s[1..];
