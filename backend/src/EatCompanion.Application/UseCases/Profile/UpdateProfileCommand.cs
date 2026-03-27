@@ -5,7 +5,7 @@ using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Application.UseCases.Profile;
 
-public record UpdateProfileCommand(Guid UserId, string DisplayName, int CalorieTarget, GoalType GoalType);
+public record UpdateProfileCommand(Guid UserId, string? DisplayName, int? CalorieTarget, GoalType? GoalType);
 
 public class UpdateProfileCommandHandler
 {
@@ -26,9 +26,12 @@ public class UpdateProfileCommandHandler
         if (user is null)
             throw new NotFoundException("User", command.UserId);
 
-        user.DisplayName = command.DisplayName;
-        user.CalorieTarget = command.CalorieTarget;
-        user.GoalType = command.GoalType;
+        if (command.DisplayName is not null)
+            user.DisplayName = command.DisplayName;
+        if (command.CalorieTarget is not null)
+            user.CalorieTarget = command.CalorieTarget.Value;
+        if (command.GoalType is not null)
+            user.GoalType = command.GoalType.Value;
         user.UpdatedAt = DateTime.UtcNow;
 
         _userRepository.Update(user);

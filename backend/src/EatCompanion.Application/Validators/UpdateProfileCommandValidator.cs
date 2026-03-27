@@ -8,12 +8,15 @@ public class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileComm
     public UpdateProfileCommandValidator()
     {
         RuleFor(x => x.DisplayName)
-            .NotEmpty().WithMessage("Display name is required.");
+            .NotEmpty().WithMessage("Display name cannot be empty.")
+            .When(x => x.DisplayName is not null);
 
         RuleFor(x => x.CalorieTarget)
-            .GreaterThan(0).WithMessage("Calorie target must be greater than 0.");
+            .GreaterThan(0).WithMessage("Calorie target must be greater than 0.")
+            .When(x => x.CalorieTarget is not null);
 
         RuleFor(x => x.GoalType)
-            .IsInEnum().WithMessage("A valid goal type is required.");
+            .IsInEnum().WithMessage("A valid goal type is required.")
+            .When(x => x.GoalType is not null);
     }
 }

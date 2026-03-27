@@ -1,21 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
 import { mealPlansApi } from '../../../api/mealPlans';
 import { useUiStore } from '../../../stores/uiStore';
 import { useAuthStore } from '../../../stores/authStore';
+import type { Meal, MealOption } from '../../../types';
 
 type ViewMode = 'today' | 'weekly';
 
-interface PlanMeal {
-  type: string;
-  name: string;
-  calories: number;
-  protein: number;
-  imageUrl?: string;
+const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+
+function getOptionName(option: MealOption): string {
+  if (option.name) return option.name;
+  if (option.description) {
+    const firstLine = option.description.split('\n')[0].trim();
+    if (firstLine) return firstLine;
+  }
+  return 'Option';
 }
 
-const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+function getIngredientLines(option: MealOption): string[] {
+  if (option.description) {
+    return option.description
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+  if (option.ingredients?.length) {
+    return option.ingredients.map(
+      (ing) => `${ing.quantity} ${ing.unit} ${ing.name}`.trim()
+    );
+  }
+  return [];
+}
+
+function isOptionSelected(option: MealOption): boolean {
+  return option.isSelected === true || option.selected === true;
+}
 
 export function PlanPage() {
   const navigate = useNavigate();
@@ -23,46 +44,64 @@ export function PlanPage() {
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const [meals, setMeals] = useState<PlanMeal[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectingOption, setSelectingOption] = useState<string | null>(null);
 
-  const CALORIE_TARGET = user?.calorieTarget || 2200;
+  const calorieTarget = user?.calorieTarget || 2200;
+
+  const fetchDay = useCallback(async () => {
+    if (!isAuthenticated || !activePlanId) return;
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await mealPlansApi.getDay(activePlanId, today);
+      if (data?.meals?.length) {
+        setMeals(data.meals);
+      }
+    } catch {
+      // keep current state on error
+    } finally {
+      setLoading(false);
+    }
+  }, [activePlanId, isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated || !activePlanId) return;
+    fetchDay();
+  }, [fetchDay]);
 
-    const fetchPlan = async () => {
-      setLoading(true);
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const { data } = await mealPlansApi.getDay(activePlanId, today);
+  const handleSelectOption = async (meal: Meal, option: MealOption) => {
+    if (!activePlanId || isOptionSelected(option)) return;
+    setSelectingOption(option.id);
+    try {
+      await mealPlansApi.selectOption(activePlanId, meal.id, option.id);
+      setMeals((prev) =>
+        prev.map((m) => {
+          if (m.id !== meal.id) return m;
+          return {
+            ...m,
+            selectedOptionId: option.id,
+            options: m.options.map((o) => ({
+              ...o,
+              isSelected: o.id === option.id,
+              selected: o.id === option.id,
+            })),
+          };
+        })
+      );
+    } catch {
+      // keep current state on error
+    } finally {
+      setSelectingOption(null);
+    }
+  };
 
-        if (data && data.meals && data.meals.length > 0) {
-          const apiMeals: PlanMeal[] = data.meals.map((m: { type?: string; mealType?: number; options?: { isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
-            const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
-            return {
-              type: MEALTYPE_LABELS[typeof m.mealType === 'number' ? m.mealType : 0] || m.type || 'Meal',
-              name: selected?.description || selected?.name || 'Meal',
-              calories: selected?.calories || 0,
-              protein: selected?.proteinGrams || selected?.protein || 0,
-            };
-          });
-          setMeals(apiMeals);
-        }
-      } catch {
-        // Keep mock data on error
-      } finally {
-        setLoading(false);
-      }
-    };
+  const totalCalories = meals.reduce((sum, m) => {
+    const selected = m.options.find(isOptionSelected) || m.options[0];
+    return sum + (selected?.calories || 0);
+  }, 0);
+  const remaining = calorieTarget - totalCalories;
 
-    fetchPlan();
-  }, [activePlanId, isAuthenticated, CALORIE_TARGET]);
-
-  const totalCalories = meals.reduce((sum, m) => sum + m.calories, 0);
-  const remaining = CALORIE_TARGET - totalCalories;
-
-  // Format today's date
   const today = new Date();
   const dayNum = today.getDate();
   const monthYear = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -123,73 +162,157 @@ export function PlanPage() {
         </button>
       </div>
 
-      {/* Date display */}
-      <div className="mb-6">
-        <div className="flex items-baseline gap-3">
-          <span className="text-5xl font-headline font-bold text-on-surface tracking-tight">{dayNum}</span>
-          <div>
-            <p className="text-on-surface-variant font-label text-sm uppercase tracking-widest">{monthYear}</p>
-            <p className="text-on-surface font-headline font-medium text-lg">{dayName}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Day summary */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="font-headline font-semibold text-on-surface text-base">Today's Plan</p>
-        <p className="text-on-surface-variant text-sm font-label">
-          {remaining > 0 ? `${remaining} kcal remaining` : 'Target reached'}
-        </p>
-      </div>
-
-      {/* Meal cards */}
-      {meals.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <Icon name="calendar_today" size={32} className="text-on-surface-variant/40 mb-3" />
-          <p className="text-on-surface-variant text-sm">No meals planned for today.</p>
-        </div>
-      )}
-      <div className="space-y-3 mb-6">
-        {meals.map((meal, idx) => (
-          <div
-            key={meal.type + idx}
-            className="bg-surface-container-lowest rounded-2xl overflow-hidden editorial-shadow"
-          >
-            <div className="flex gap-3 p-3">
-              {/* Thumbnail */}
-              {meal.imageUrl ? (
-                <img
-                  src={meal.imageUrl}
-                  alt={meal.name}
-                  className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center flex-shrink-0">
-                  <Icon name="restaurant" size={32} className="text-primary/40" />
-                </div>
-              )}
-
-              {/* Info */}
-              <div className="flex-1 min-w-0 py-0.5">
-                <p className="text-[10px] font-label font-medium uppercase tracking-widest text-on-surface-variant mb-0.5">
-                  {meal.type}
+      {viewMode === 'today' ? (
+        <>
+          {/* Date display */}
+          <div className="mb-6">
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl font-headline font-bold text-on-surface tracking-tight">
+                {dayNum}
+              </span>
+              <div>
+                <p className="text-on-surface-variant font-label text-sm uppercase tracking-widest">
+                  {monthYear}
                 </p>
-                <p className="font-headline font-semibold text-on-surface text-sm mb-1">
-                  {meal.name}
-                </p>
-                <span className="inline-block bg-primary-container text-on-primary-container text-xs font-label font-medium px-2 py-0.5 rounded-full">
-                  {meal.calories} kcal
-                </span>
+                <p className="text-on-surface font-headline font-medium text-lg">{dayName}</p>
               </div>
-
-              {/* Edit button */}
-              <button className="self-start p-1.5 rounded-full hover:bg-surface-container transition-colors flex-shrink-0">
-                <Icon name="edit" size={18} className="text-on-surface-variant" />
-              </button>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Day summary */}
+          <div className="flex items-center justify-between mb-5">
+            <p className="font-headline font-semibold text-on-surface text-base">Today's Plan</p>
+            <p className="text-on-surface-variant text-sm font-label">
+              {remaining > 0 ? `${remaining} kcal remaining` : 'Target reached'}
+            </p>
+          </div>
+
+          {/* Calorie overview */}
+          <div className="bg-surface-container-lowest rounded-2xl editorial-shadow p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-label text-on-surface-variant">Calories</span>
+              <span className="text-sm font-label text-on-surface-variant">
+                {totalCalories} / {calorieTarget} kcal
+              </span>
+            </div>
+            <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  totalCalories > calorieTarget ? 'bg-error' : 'bg-primary'
+                }`}
+                style={{ width: `${Math.min((totalCalories / calorieTarget) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Meal sections */}
+          {meals.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Icon name="calendar_today" size={32} className="text-on-surface-variant/40 mb-3" />
+              <p className="text-on-surface-variant text-sm">No meals planned for today.</p>
+            </div>
+          )}
+
+          <div className="space-y-6 mb-6">
+            {meals.map((meal) => {
+              const mealLabel =
+                MEALTYPE_LABELS[typeof meal.mealType === 'number' ? meal.mealType : 0] ||
+                meal.type ||
+                'Meal';
+
+              return (
+                <div key={meal.id}>
+                  <p className="text-xs font-label font-medium uppercase tracking-widest text-on-surface-variant mb-2">
+                    {mealLabel}
+                  </p>
+                  <div className="space-y-2">
+                    {meal.options.map((option) => {
+                      const selected = isOptionSelected(option);
+                      const ingredientLines = getIngredientLines(option);
+                      const isSelecting = selectingOption === option.id;
+
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => handleSelectOption(meal, option)}
+                          disabled={isSelecting}
+                          className={`w-full text-left rounded-2xl p-3 transition-all ${
+                            selected
+                              ? 'bg-primary-container border-2 border-primary editorial-shadow'
+                              : 'bg-surface-container-lowest border-2 border-transparent editorial-shadow hover:border-outline-variant'
+                          } ${isSelecting ? 'opacity-60' : ''}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`font-headline font-semibold text-sm mb-1 ${
+                                  selected ? 'text-on-primary-container' : 'text-on-surface'
+                                }`}
+                              >
+                                {getOptionName(option)}
+                              </p>
+
+                              {ingredientLines.length > 0 && (
+                                <ul className="space-y-0.5 mb-2">
+                                  {ingredientLines.map((line, i) => (
+                                    <li
+                                      key={i}
+                                      className={`text-xs flex items-start gap-1.5 ${
+                                        selected
+                                          ? 'text-on-primary-container/70'
+                                          : 'text-on-surface-variant'
+                                      }`}
+                                    >
+                                      <span className="mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
+                                      {line}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                              {selected && (
+                                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                  <Icon name="check" size={14} className="text-on-primary" />
+                                </div>
+                              )}
+                              {option.calories > 0 && (
+                                <span
+                                  className={`text-xs font-label font-medium px-2 py-0.5 rounded-full ${
+                                    selected
+                                      ? 'bg-primary text-on-primary'
+                                      : 'bg-primary-container text-on-primary-container'
+                                  }`}
+                                >
+                                  {option.calories} kcal
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        /* Weekly view placeholder */
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center mb-4">
+            <Icon name="date_range" size={28} className="text-primary" />
+          </div>
+          <p className="text-on-surface font-headline font-semibold text-base mb-1">
+            Same plan for all days
+          </p>
+          <p className="text-on-surface-variant text-sm">
+            Your meal plan repeats daily. Switch to Today to see your options.
+          </p>
+        </div>
+      )}
 
       {/* Import / Add button */}
       <button

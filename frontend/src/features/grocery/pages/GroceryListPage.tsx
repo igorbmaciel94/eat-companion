@@ -9,18 +9,49 @@ const categoryColors: Record<string, string> = {
 };
 
 export function GroceryListPage() {
-  const { data, checkedItems, toggleItem } = useGroceryList();
+  const { data, checkedItems, toggleItem, generate, generating, hasActivePlan } = useGroceryList();
 
-  if (data.totalItems === 0) {
+  if (!hasActivePlan) {
     return (
       <div className="py-2 flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-6">
           <Icon name="shopping_basket" size={40} className="text-primary" />
         </div>
-        <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">No grocery list yet</h2>
-        <p className="text-on-surface-variant text-base mb-8">
+        <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">No meal plan yet</h2>
+        <p className="text-on-surface-variant text-base">
           Import a meal plan first to generate your grocery list.
         </p>
+      </div>
+    );
+  }
+
+  if (data.totalItems === 0) {
+    return (
+      <div className="py-2 flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-6">
+          <Icon name="shopping_cart" size={40} className="text-primary" />
+        </div>
+        <h2 className="text-2xl font-headline font-bold text-on-surface mb-2">Generate Grocery List</h2>
+        <p className="text-on-surface-variant text-base mb-8">
+          Select your preferred meal options on the Plan page, then generate a consolidated grocery list for the next 3 days.
+        </p>
+        <button
+          onClick={generate}
+          disabled={generating}
+          className="flex items-center gap-2 bg-primary text-on-primary rounded-full px-6 py-3 font-medium text-sm disabled:opacity-60 transition-colors"
+        >
+          {generating ? (
+            <>
+              <Icon name="hourglass_empty" size={18} />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Icon name="checklist" size={18} />
+              Generate Grocery List
+            </>
+          )}
+        </button>
       </div>
     );
   }
@@ -61,6 +92,16 @@ export function GroceryListPage() {
           </p>
         </div>
       </div>
+
+      {/* Regenerate button */}
+      <button
+        onClick={generate}
+        disabled={generating}
+        className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-outline-variant rounded-2xl py-3 text-on-surface-variant text-sm font-medium transition-colors hover:border-primary hover:text-primary mb-6 disabled:opacity-50"
+      >
+        <Icon name="refresh" size={18} />
+        {generating ? 'Regenerating...' : 'Regenerate List'}
+      </button>
 
       {/* Categories */}
       <div className="space-y-6">

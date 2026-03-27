@@ -34,6 +34,7 @@ public class NutritionCalculator : INutritionCalculator
             m.SortOrder,
             m.Options.Select(o => new MealOptionDto(
                 o.Id,
+                o.Name,
                 o.Description ?? o.Name,
                 o.IsSelected,
                 o.SortOrder,

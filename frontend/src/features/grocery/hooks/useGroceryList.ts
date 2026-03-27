@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { groceryListsApi } from '../../../api/groceryLists';
 import { useUiStore } from '../../../stores/uiStore';
 import { useAuthStore } from '../../../stores/authStore';
@@ -26,58 +26,54 @@ const emptyData: GroceryListData = {
 export function useGroceryList() {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [data, setData] = useState<GroceryListData>(emptyData);
+  const [generating, setGenerating] = useState(false);
   const activePlanId = useUiStore((s) => s.activeMealPlanId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  useEffect(() => {
-    if (!isAuthenticated || !activePlanId) return;
+  const generate = useCallback(async () => {
+    if (!isAuthenticated || !activePlanId || generating) return;
+    setGenerating(true);
+    try {
+      const today = new Date();
+      const startDate = today.toISOString().split('T')[0];
+      const endDate = new Date(today.getTime() + 2 * 86400000).toISOString().split('T')[0];
+      const { data: listData } = await groceryListsApi.generate(activePlanId, startDate, endDate);
 
-    const fetchGroceryList = async () => {
-      try {
-        // Generate a grocery list for the next 3 days
-        const today = new Date();
-        const startDate = today.toISOString().split('T')[0];
-        const endDate = new Date(today.getTime() + 2 * 86400000).toISOString().split('T')[0];
-        const { data: listData } = await groceryListsApi.generate(activePlanId, startDate, endDate);
+      if (listData && listData.id) {
+        const { data: fullList } = await groceryListsApi.getById(listData.id);
 
-        if (listData && listData.id) {
-          // Fetch the full list
-          const { data: fullList } = await groceryListsApi.getById(listData.id);
+        if (fullList && fullList.items && fullList.items.length > 0) {
+          const categoryMap = new Map<string, { id: string; name: string }[]>();
+          const checked = new Set<string>();
 
-          if (fullList && fullList.items && fullList.items.length > 0) {
-            // Group items by category
-            const categoryMap = new Map<string, { id: string; name: string }[]>();
-            const checked = new Set<string>();
-
-            for (const item of fullList.items) {
-              const cat = item.category || 'Other';
-              if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-              categoryMap.get(cat)!.push({ id: item.id, name: item.name });
-              if (item.isChecked || item.checked) checked.add(item.name);
-            }
-
-            const categories: Category[] = Array.from(categoryMap.entries()).map(([name, items]) => ({
-              name,
-              items,
-            }));
-
-            setData({
-              totalItems: fullList.items.length,
-              consolidationDays: 3,
-              dateRange: `${formatShortDate(startDate)} — ${formatShortDate(endDate)}`,
-              categories,
-              listId: fullList.id,
-            });
-            setCheckedItems(checked);
+          for (const item of fullList.items) {
+            const cat = item.category || 'Other';
+            if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+            categoryMap.get(cat)!.push({ id: item.id, name: item.name });
+            if (item.isChecked || item.checked) checked.add(item.name);
           }
-        }
-      } catch {
-        // Keep mock data on error
-      }
-    };
 
-    fetchGroceryList();
-  }, [activePlanId, isAuthenticated]);
+          const categories: Category[] = Array.from(categoryMap.entries()).map(([name, items]) => ({
+            name,
+            items,
+          }));
+
+          setData({
+            totalItems: fullList.items.length,
+            consolidationDays: 3,
+            dateRange: `${formatShortDate(startDate)} — ${formatShortDate(endDate)}`,
+            categories,
+            listId: fullList.id,
+          });
+          setCheckedItems(checked);
+        }
+      }
+    } catch {
+      // keep current state on error
+    } finally {
+      setGenerating(false);
+    }
+  }, [activePlanId, isAuthenticated, generating]);
 
   const toggleItem = useCallback(async (itemName: string, itemId?: string) => {
     setCheckedItems((prev) => {
@@ -90,7 +86,6 @@ export function useGroceryList() {
       return next;
     });
 
-    // Toggle on backend if we have a listId
     if (isAuthenticated && data.listId && itemId) {
       try {
         await groceryListsApi.toggleItem(data.listId, itemId);
@@ -107,6 +102,9 @@ export function useGroceryList() {
     toggleItem,
     checkedCount,
     progress,
+    generate,
+    generating,
+    hasActivePlan: !!activePlanId,
   };
 }
 

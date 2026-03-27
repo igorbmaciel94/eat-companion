@@ -157,12 +157,12 @@ public class MealPlanParser
 
     private static string GetOptionDescription(string optionText)
     {
-        // Clean up the text for description: take the whole text but clean it up
+        // Clean up the text for description: keep as line-separated ingredients
         var lines = optionText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim())
             .Where(l => !string.IsNullOrWhiteSpace(l));
 
-        return string.Join(" + ", lines)
+        return string.Join("\n", lines)
             .Replace("  ", " ")
             .Trim();
     }

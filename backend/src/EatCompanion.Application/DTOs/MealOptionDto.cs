@@ -2,6 +2,7 @@ namespace EatCompanion.Application.DTOs;
 
 public record MealOptionDto(
     Guid Id,
+    string? Name,
     string Description,
     bool IsSelected,
     int SortOrder,

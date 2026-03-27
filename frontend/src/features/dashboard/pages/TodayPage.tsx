@@ -48,7 +48,7 @@ export function TodayPage() {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
             return {
               type: MEALTYPE_LABELS[typeof m.mealType === 'number' ? m.mealType : 0] || m.type || 'Meal',
-              name: selected?.description || selected?.name || 'Meal',
+              name: selected?.name || selected?.description?.split('\n')[0] || 'Meal',
               calories: selected?.calories || 0,
               protein: selected?.proteinGrams || selected?.protein || 0,
               status: 'pending' as MealStatus,

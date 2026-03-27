@@ -35,7 +35,7 @@ public class ProfileController : ControllerBase
         return Ok(result);
     }
 
-    public record UpdateProfileRequest(string DisplayName, int CalorieTarget, GoalType GoalType);
+    public record UpdateProfileRequest(string? DisplayName, int? CalorieTarget, GoalType? GoalType);
 
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateProfileRequest request)
