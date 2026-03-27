@@ -14,15 +14,18 @@ public class MealLogsController : ControllerBase
 {
     private readonly LogMealCommandHandler _logMealHandler;
     private readonly GetMealLogsQueryHandler _getMealLogsHandler;
+    private readonly DeleteMealLogCommandHandler _deleteMealLogHandler;
     private readonly IValidator<LogMealCommand> _logMealValidator;
 
     public MealLogsController(
         LogMealCommandHandler logMealHandler,
         GetMealLogsQueryHandler getMealLogsHandler,
+        DeleteMealLogCommandHandler deleteMealLogHandler,
         IValidator<LogMealCommand> logMealValidator)
     {
         _logMealHandler = logMealHandler;
         _getMealLogsHandler = getMealLogsHandler;
+        _deleteMealLogHandler = deleteMealLogHandler;
         _logMealValidator = logMealValidator;
     }
 
@@ -53,5 +56,14 @@ public class MealLogsController : ControllerBase
     {
         var result = await _getMealLogsHandler.Handle(new GetMealLogsQuery(GetUserId(), startDate, endDate));
         return Ok(result);
+    }
+
+    public record DeleteMealLogRequest(DateOnly Date, Guid? MealOptionId);
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteMealLog([FromQuery] DateOnly date, [FromQuery] Guid? mealOptionId)
+    {
+        await _deleteMealLogHandler.Handle(new DeleteMealLogCommand(GetUserId(), date, mealOptionId));
+        return NoContent();
     }
 }

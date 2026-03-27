@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
 import { ProgressBar } from '../../../components/ui/ProgressBar';
@@ -12,43 +12,116 @@ export function ImportPage() {
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const cleanupPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return cleanupPolling;
+  }, [cleanupPolling]);
+
+  const startPolling = useCallback((id: string) => {
+    cleanupPolling();
+    let fakeProg = 30;
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const { data } = await mealPlansApi.getImportStatus(id);
+
+        if (data.status === 'Processing') {
+          fakeProg = Math.min(fakeProg + 5, 85);
+          setProgress(fakeProg);
+        }
+
+        if (data.status === 'Completed' && data.mealPlanId) {
+          cleanupPolling();
+          setProgress(100);
+          useUiStore.getState().setActiveMealPlanId(data.mealPlanId);
+          setTimeout(() => navigate('/plan'), 600);
+        }
+
+        if (data.status === 'Failed') {
+          cleanupPolling();
+          setIsProcessing(false);
+          setProgress(0);
+          setError(data.errorMessage || 'Import failed. Please try again.');
+        }
+      } catch {
+        // Keep polling on network errors
+      }
+    }, 3000);
+  }, [cleanupPolling, navigate]);
+
+  const startImport = async (file: File) => {
+    setFileName(file.name);
+    setIsProcessing(true);
+    setProgress(10);
+    setError('');
+    setShowConfirm(false);
+
+    try {
+      const { data } = await mealPlansApi.import(file);
+      setProgress(20);
+      startPolling(data.jobId);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { message?: string; detail?: string; jobId?: string } } };
+
+      // If there's already a pending import, start polling it
+      if (axiosErr.response?.status === 409 && axiosErr.response?.data?.jobId) {
+        setProgress(20);
+        startPolling(axiosErr.response.data.jobId);
+        return;
+      }
+
+      setIsProcessing(false);
+      setProgress(0);
+      setError(axiosErr.response?.data?.detail || axiosErr.response?.data?.message || 'Failed to start import');
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setFileName(file.name);
-    setIsProcessing(true);
-    setProgress(10);
-    setError('');
+    const activePlanId = useUiStore.getState().activeMealPlanId;
+    if (activePlanId) {
+      setPendingFile(file);
+      setShowConfirm(true);
+      return;
+    }
 
-    try {
-      setProgress(30);
-      const { data } = await mealPlansApi.import(file);
-      setProgress(80);
+    startImport(file);
+  };
 
-      // Store the active meal plan
-      useUiStore.getState().setActiveMealPlanId(data.mealPlanId);
-
-      setProgress(100);
-      // Navigate after brief delay
-      setTimeout(() => navigate('/plan'), 600);
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { detail?: string } } };
-      setIsProcessing(false);
-      setProgress(0);
-      setError(axiosErr.response?.data?.detail || 'Failed to import PDF');
+  const handleConfirmReplace = () => {
+    if (pendingFile) {
+      startImport(pendingFile);
     }
   };
 
+  const handleCancelReplace = () => {
+    setShowConfirm(false);
+    setPendingFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const statusText =
-    progress < 30
-      ? 'Analyzing document structure...'
-      : progress < 60
-        ? 'Identifying portions and timings...'
-        : progress < 90
-          ? 'Mapping nutritional data...'
-          : 'Finalizing your plan...';
+    progress < 20
+      ? 'Uploading document...'
+      : progress < 40
+        ? 'Analyzing document structure...'
+        : progress < 60
+          ? 'Identifying portions and timings...'
+          : progress < 85
+            ? 'Mapping nutritional data...'
+            : 'Finalizing your plan...';
 
   return (
     <div className="py-2">
@@ -65,10 +138,41 @@ export function ImportPage() {
         Import Plan
       </h1>
 
+      {/* Confirmation dialog */}
+      {showConfirm && (
+        <div className="bg-error-container rounded-2xl p-5 editorial-shadow mb-6">
+          <div className="flex items-start gap-3 mb-4">
+            <Icon name="warning" size={24} className="text-on-error-container mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-headline font-semibold text-on-error-container text-base mb-1">
+                Replace existing plan?
+              </p>
+              <p className="text-on-error-container/80 text-sm">
+                You already have an active meal plan. Importing a new one will replace it.
+                Your meal logs and history will be preserved.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleConfirmReplace}
+              className="flex-1 bg-error text-on-error rounded-full py-2.5 text-sm font-medium"
+            >
+              Replace Plan
+            </button>
+            <button
+              onClick={handleCancelReplace}
+              className="flex-1 border border-outline-variant text-on-surface-variant rounded-full py-2.5 text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Upload area */}
       <div className="bg-surface-container-lowest rounded-2xl p-8 editorial-shadow mb-6">
         {!isProcessing ? (
-          /* Upload state */
           <div className="flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-5">
               <Icon name="upload_file" size={36} className="text-primary" />
@@ -97,7 +201,6 @@ export function ImportPage() {
             />
           </div>
         ) : (
-          /* Processing state */
           <div className="flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mb-5">
               <Icon
@@ -109,8 +212,11 @@ export function ImportPage() {
             <h2 className="font-headline font-semibold text-on-surface text-xl mb-1">
               Processing
             </h2>
-            <p className="text-on-surface-variant text-sm mb-5">
+            <p className="text-on-surface-variant text-sm mb-1">
               {fileName}
+            </p>
+            <p className="text-on-surface-variant text-xs mb-5">
+              You can navigate away — processing continues in the background
             </p>
 
             <div className="w-full mb-2">

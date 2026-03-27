@@ -1,14 +1,27 @@
 import client from './client';
-import type { MealPlan, DailySummary, ImportResult } from '../types';
+import type { MealPlan, DailySummary } from '../types';
+
+export interface ImportJobResponse {
+  jobId: string;
+}
+
+export interface ImportJobStatus {
+  jobId: string;
+  status: 'Pending' | 'Processing' | 'Completed' | 'Failed';
+  mealPlanId?: string;
+  errorMessage?: string;
+}
 
 export const mealPlansApi = {
   import: (file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return client.post<ImportResult>('/meal-plans/import', form, {
+    return client.post<ImportJobResponse>('/meal-plans/import', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  getImportStatus: (jobId: string) =>
+    client.get<ImportJobStatus>(`/meal-plans/import/${jobId}/status`),
   list: () => client.get<MealPlan[]>('/meal-plans'),
   getById: (id: string) => client.get<MealPlan>(`/meal-plans/${id}`),
   getDay: (id: string, date: string) =>

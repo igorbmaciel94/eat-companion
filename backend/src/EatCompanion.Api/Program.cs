@@ -36,7 +36,12 @@ builder.Services.AddScoped<IMealPlanRepository, MealPlanRepository>();
 builder.Services.AddScoped<IGroceryListRepository, GroceryListRepository>();
 builder.Services.AddScoped<IMealLogRepository, MealLogRepository>();
 builder.Services.AddScoped<IWeightEntryRepository, WeightEntryRepository>();
+builder.Services.AddScoped<IImportJobRepository, ImportJobRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Import job queue (Channel + BackgroundService)
+builder.Services.AddSingleton(System.Threading.Channels.Channel.CreateUnbounded<Guid>());
+builder.Services.AddHostedService<ImportJobProcessor>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -58,6 +63,7 @@ builder.Services.AddScoped<AddIngredientCommandHandler>();
 builder.Services.AddScoped<UpdateIngredientCommandHandler>();
 builder.Services.AddScoped<DeleteIngredientCommandHandler>();
 builder.Services.AddScoped<LogMealCommandHandler>();
+builder.Services.AddScoped<DeleteMealLogCommandHandler>();
 builder.Services.AddScoped<GetMealLogsQueryHandler>();
 builder.Services.AddScoped<GetGroceryListQueryHandler>();
 builder.Services.AddScoped<GetLatestGroceryListQueryHandler>();

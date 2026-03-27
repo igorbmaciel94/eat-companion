@@ -36,7 +36,7 @@ public class MealPlanRepository : IMealPlanRepository
     public async Task<List<MealPlan>> GetByUserIdAsync(Guid userId)
     {
         return await _context.MealPlans
-            .Where(mp => mp.UserId == userId)
+            .Where(mp => mp.UserId == userId && mp.IsActive)
             .OrderByDescending(mp => mp.ImportedAt)
             .ToListAsync();
     }
@@ -84,6 +84,15 @@ public class MealPlanRepository : IMealPlanRepository
     public void DeleteIngredient(Ingredient ingredient)
     {
         _context.Set<Ingredient>().Remove(ingredient);
+    }
+
+    public async Task DeactivateAllForUserAsync(Guid userId)
+    {
+        var plans = await _context.MealPlans
+            .Where(mp => mp.UserId == userId && mp.IsActive)
+            .ToListAsync();
+        foreach (var plan in plans)
+            plan.IsActive = false;
     }
 
     public async Task AddAsync(MealPlan mealPlan)

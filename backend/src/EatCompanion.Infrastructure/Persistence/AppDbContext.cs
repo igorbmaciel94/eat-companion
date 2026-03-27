@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<GroceryItem> GroceryItems => Set<GroceryItem>();
     public DbSet<MealLog> MealLogs => Set<MealLog>();
     public DbSet<WeightEntry> WeightEntries => Set<WeightEntry>();
+    public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

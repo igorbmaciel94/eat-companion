@@ -18,8 +18,8 @@ interface Meal {
   imageUrl?: string;
   mealId?: string;
   optionId?: string;
+  mealType?: number | string;
 }
-
 
 const MEALTYPE_LABELS: Record<number | string, string> = {
   0: 'Breakfast', 1: 'Morning Snack', 2: 'Lunch', 3: 'Afternoon Snack',
@@ -28,6 +28,17 @@ const MEALTYPE_LABELS: Record<number | string, string> = {
   AfternoonSnack: 'Afternoon Snack', Dinner: 'Dinner', EveningSnack: 'Evening Snack',
   Snack: 'Snack',
 };
+
+const MEALTYPE_NUMBER: Record<string, number> = {
+  Breakfast: 0, MorningSnack: 1, Lunch: 2, AfternoonSnack: 3,
+  Dinner: 4, EveningSnack: 5, Snack: 6,
+};
+
+function getMealTypeNumber(mt: number | string | undefined): number {
+  if (typeof mt === 'number') return mt;
+  if (typeof mt === 'string') return MEALTYPE_NUMBER[mt] ?? 0;
+  return 0;
+}
 
 export function TodayPage() {
   const navigate = useNavigate();
@@ -62,16 +73,20 @@ export function TodayPage() {
       setLoading(true);
       try {
         const today = new Date().toISOString().split('T')[0];
-        const { data } = await mealPlansApi.getDay(activePlanId, today);
+        const [planRes, logsRes] = await Promise.all([
+          mealPlansApi.getDay(activePlanId, today),
+          mealLogsApi.getByDateRange(today, today),
+        ]);
+
+        const data = planRes.data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const logs: any[] = logsRes.data || [];
 
         if (data && data.meals && data.meals.length > 0) {
           const mealOrder: Record<string | number, number> = {
-            0: 0, Breakfast: 0,
-            1: 1, MorningSnack: 1,
-            2: 2, Lunch: 2,
-            3: 3, AfternoonSnack: 3,
-            4: 4, Dinner: 4,
-            5: 5, EveningSnack: 5,
+            0: 0, Breakfast: 0, 1: 1, MorningSnack: 1,
+            2: 2, Lunch: 2, 3: 3, AfternoonSnack: 3,
+            4: 4, Dinner: 4, 5: 5, EveningSnack: 5,
             6: 6, Snack: 6,
           };
           const sorted = [...data.meals].sort((a: { mealType?: number | string }, b: { mealType?: number | string }) => {
@@ -79,16 +94,28 @@ export function TodayPage() {
             const bO = mealOrder[b.mealType ?? 0] ?? 99;
             return aO - bO;
           });
+
           const apiMeals: Meal[] = sorted.map((m: { id: string; type?: string; mealType?: number | string; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
             const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
+
+            // Hydrate status from backend logs
+            const log = logs.find((l: { mealOptionId?: string }) => l.mealOptionId === selected?.id);
+            let status: MealStatus = 'pending';
+            if (log) {
+              const logStatus = typeof log.status === 'string' ? log.status : '';
+              if (log.status === 0 || logStatus === 'Completed') status = 'completed';
+              else if (log.status === 1 || logStatus === 'Skipped') status = 'skipped';
+            }
+
             return {
               type: MEALTYPE_LABELS[m.mealType ?? 0] || m.type || 'Meal',
               name: selected?.name || selected?.description?.split('\n')[0] || 'Meal',
               calories: selected?.calories || 0,
               protein: selected?.proteinGrams || selected?.protein || 0,
-              status: 'pending' as MealStatus,
+              status,
               mealId: m.id,
               optionId: selected?.id,
+              mealType: m.mealType,
             };
           });
           setMeals(apiMeals);
@@ -112,6 +139,7 @@ export function TodayPage() {
     .reduce((sum, m) => sum + (m.protein ?? 0), 0);
 
   const remaining = CALORIE_TARGET - completedCalories;
+  const allHandled = meals.length > 0 && meals.every((m) => m.status !== 'pending');
 
   const toggleMeal = async (idx: number) => {
     const meal = meals[idx];
@@ -123,16 +151,22 @@ export function TodayPage() {
       ),
     );
 
-    // Log to backend if authenticated
     if (isAuthenticated) {
       try {
-        const mealTypeMap: Record<string, number> = { Breakfast: 0, Lunch: 1, Snack: 2, Dinner: 3 };
-        await mealLogsApi.log({
-          date: new Date().toISOString().split('T')[0],
-          mealType: mealTypeMap[meal.type] ?? 0,
-          mealOptionId: meal.optionId,
-          status: newStatus === 'completed' ? 1 : 0,
-        });
+        if (newStatus === 'pending') {
+          // Delete the log when undoing
+          await mealLogsApi.delete(
+            new Date().toISOString().split('T')[0],
+            meal.optionId,
+          );
+        } else {
+          await mealLogsApi.log({
+            date: new Date().toISOString().split('T')[0],
+            mealType: getMealTypeNumber(meal.mealType),
+            mealOptionId: meal.optionId,
+            status: 0, // Completed
+          });
+        }
       } catch { /* ignore logging errors */ }
     }
   };
@@ -149,13 +183,19 @@ export function TodayPage() {
 
     if (isAuthenticated) {
       try {
-        const mealTypeMap: Record<string, number> = { Breakfast: 0, Lunch: 1, Snack: 2, Dinner: 3 };
-        await mealLogsApi.log({
-          date: new Date().toISOString().split('T')[0],
-          mealType: mealTypeMap[meal.type] ?? 0,
-          mealOptionId: meal.optionId,
-          status: newStatus === 'skipped' ? 2 : 0,
-        });
+        if (newStatus === 'pending') {
+          await mealLogsApi.delete(
+            new Date().toISOString().split('T')[0],
+            meal.optionId,
+          );
+        } else {
+          await mealLogsApi.log({
+            date: new Date().toISOString().split('T')[0],
+            mealType: getMealTypeNumber(meal.mealType),
+            mealOptionId: meal.optionId,
+            status: 1, // Skipped
+          });
+        }
       } catch { /* ignore logging errors */ }
     }
   };
@@ -210,6 +250,38 @@ export function TodayPage() {
       <h1 className="text-3xl font-headline font-medium tracking-tight text-on-surface mb-5">
         Daily Balance
       </h1>
+
+      {/* Day Complete card */}
+      {allHandled && (
+        <div className="bg-primary-container rounded-2xl p-5 editorial-shadow mb-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <Icon name="check_circle" size={24} className="text-on-primary" />
+            </div>
+            <div>
+              <p className="font-headline font-bold text-on-primary-container text-lg">Day Complete!</p>
+              <p className="text-on-primary-container/70 text-sm">All meals have been logged.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 text-sm">
+            <div>
+              <span className="text-on-primary-container/60">Consumed: </span>
+              <span className="font-semibold text-on-primary-container">{completedCalories} kcal</span>
+            </div>
+            <div>
+              <span className="text-on-primary-container/60">Protein: </span>
+              <span className="font-semibold text-on-primary-container">{completedProtein}g</span>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/charts')}
+            className="mt-3 flex items-center gap-1 text-primary text-sm font-medium"
+          >
+            <Icon name="bar_chart" size={16} />
+            View Charts
+          </button>
+        </div>
+      )}
 
       {/* Calorie summary card */}
       <div className="bg-surface-container-lowest rounded-2xl p-5 editorial-shadow mb-6">
@@ -337,10 +409,7 @@ export function TodayPage() {
                 key={meal.type + idx}
                 onClick={() => {
                   if (isCompleted || isSkipped) {
-                    // Toggle back to pending
-                    setMeals((prev) =>
-                      prev.map((m, i) => (i === idx ? { ...m, status: 'pending' } : m)),
-                    );
+                    toggleMeal(idx);
                   }
                 }}
                 className={`w-full flex items-center gap-3 bg-surface-container-lowest rounded-2xl p-3 editorial-shadow text-left transition-opacity ${
@@ -395,10 +464,6 @@ export function TodayPage() {
         </div>
       </div>
 
-      {/* FAB */}
-      <button className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center editorial-shadow z-40 transition-transform active:scale-95">
-        <Icon name="add" size={28} />
-      </button>
     </div>
   );
 }

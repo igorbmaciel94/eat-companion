@@ -11,6 +11,7 @@ public interface IMealPlanRepository
     Task<MealOption?> GetMealOptionAsync(Guid optionId);
     Task<List<MealOption>> GetSiblingOptionsAsync(Guid mealId);
     Task<Ingredient?> GetIngredientAsync(Guid ingredientId);
+    Task DeactivateAllForUserAsync(Guid userId);
     Task AddAsync(MealPlan mealPlan);
     void Update(MealPlan mealPlan);
     void UpdateOption(MealOption option);

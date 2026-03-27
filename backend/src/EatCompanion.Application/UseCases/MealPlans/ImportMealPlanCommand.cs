@@ -27,6 +27,8 @@ public class ImportMealPlanCommandHandler
     {
         var mealPlan = await _pdfParser.ParseAsync(command.PdfStream, command.FileName, command.UserId);
 
+        // Deactivate existing plans before adding the new one
+        await _mealPlanRepo.DeactivateAllForUserAsync(command.UserId);
         await _mealPlanRepo.AddAsync(mealPlan);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

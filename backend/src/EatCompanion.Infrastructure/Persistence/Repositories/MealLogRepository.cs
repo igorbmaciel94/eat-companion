@@ -23,8 +23,24 @@ public class MealLogRepository : IMealLogRepository
             .ToListAsync();
     }
 
+    public async Task<MealLog?> GetByUserDateAndOptionAsync(Guid userId, DateOnly date, Guid? mealOptionId)
+    {
+        return await _context.MealLogs
+            .FirstOrDefaultAsync(ml => ml.UserId == userId && ml.Date == date && ml.MealOptionId == mealOptionId);
+    }
+
     public async Task AddAsync(MealLog mealLog)
     {
         await _context.MealLogs.AddAsync(mealLog);
+    }
+
+    public void Update(MealLog mealLog)
+    {
+        _context.MealLogs.Update(mealLog);
+    }
+
+    public void Delete(MealLog mealLog)
+    {
+        _context.MealLogs.Remove(mealLog);
     }
 }
