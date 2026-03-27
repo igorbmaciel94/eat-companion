@@ -27,14 +27,16 @@ export function CalorieTargetPage() {
 
     setLoading(true);
     try {
-      const { data } = await profileApi.update({ calorieTarget: target });
-      updateUser({ calorieTarget: data.calorieTarget });
-    } catch {
-      // proceed anyway
-    } finally {
-      setLoading(false);
+      const { data } = await profileApi.update({ calorieTarget: target, onboardingCompleted: true });
+      updateUser({ calorieTarget: data.calorieTarget, onboardingCompleted: true });
       setOnboardingCompleted();
       navigate('/plan/import');
+    } catch {
+      // proceed anyway — still mark locally
+      setOnboardingCompleted();
+      navigate('/plan/import');
+    } finally {
+      setLoading(false);
     }
   };
 

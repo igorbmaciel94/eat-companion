@@ -15,22 +15,24 @@ public class GroceryListRepository : IGroceryListRepository
 
     public async Task<GroceryList?> GetByIdAsync(Guid id)
     {
-        return await _context.GroceryLists
-            .Include(gl => gl.Items)
+        var list = await _context.GroceryLists
+            .Include(gl => gl.Items.OrderBy(i => i.Category).ThenBy(i => i.Name))
             .FirstOrDefaultAsync(gl => gl.Id == id);
+        return list;
     }
 
     public async Task<GroceryList?> GetByIdWithItemsAsync(Guid id)
     {
-        return await _context.GroceryLists
-            .Include(gl => gl.Items)
+        var list = await _context.GroceryLists
+            .Include(gl => gl.Items.OrderBy(i => i.Category).ThenBy(i => i.Name))
             .FirstOrDefaultAsync(gl => gl.Id == id);
+        return list;
     }
 
     public async Task<GroceryList?> GetLatestByMealPlanIdAsync(Guid mealPlanId)
     {
         return await _context.GroceryLists
-            .Include(gl => gl.Items)
+            .Include(gl => gl.Items.OrderBy(i => i.Category).ThenBy(i => i.Name))
             .Where(gl => gl.MealPlanId == mealPlanId)
             .OrderByDescending(gl => gl.CreatedAt)
             .FirstOrDefaultAsync();
@@ -45,7 +47,7 @@ public class GroceryListRepository : IGroceryListRepository
     public async Task<IReadOnlyList<GroceryList>> GetByUserIdAsync(Guid userId)
     {
         return await _context.GroceryLists
-            .Include(gl => gl.Items)
+            .Include(gl => gl.Items.OrderBy(i => i.Category).ThenBy(i => i.Name))
             .Where(gl => gl.UserId == userId)
             .OrderByDescending(gl => gl.CreatedAt)
             .ToListAsync();

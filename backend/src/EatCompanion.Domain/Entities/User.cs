@@ -12,6 +12,7 @@ public class User
     public GoalType GoalType { get; set; } = GoalType.Maintain;
     public decimal? HeightCm { get; set; }
     public decimal? WeightKg { get; set; }
+    public bool OnboardingCompleted { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

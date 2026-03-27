@@ -23,6 +23,17 @@ public class AddWeightEntryCommandHandler
 
     public async Task<WeightEntryDto> Handle(AddWeightEntryCommand command)
     {
+        // Upsert: if entry for same user+date exists, update it
+        var existing = await _weightEntryRepository.GetByUserAndDateAsync(command.UserId, command.Date);
+        if (existing is not null)
+        {
+            existing.WeightKg = command.WeightKg;
+            existing.Notes = command.Notes;
+            _weightEntryRepository.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return existing.Adapt<WeightEntryDto>();
+        }
+
         var entry = new WeightEntry
         {
             Id = Guid.NewGuid(),

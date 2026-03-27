@@ -31,15 +31,17 @@ export function GoalSelectionPage() {
   const navigate = useNavigate();
   const updateUser = useAuthStore((s) => s.updateUser);
   const [loading, setLoading] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSelect = async (goalType: number) => {
     setLoading(goalType);
+    setError(null);
     try {
       const { data } = await profileApi.update({ goalType });
       updateUser({ goalType: data.goalType });
       navigate('/onboarding/body');
     } catch {
-      navigate('/onboarding/body');
+      setError('Could not save your goal. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -56,6 +58,10 @@ export function GoalSelectionPage() {
       <h1 className="text-3xl font-headline font-bold tracking-tight text-on-surface mb-8">
         What is your focus?
       </h1>
+
+      {error && (
+        <p className="text-error text-sm mb-4">{error}</p>
+      )}
 
       {/* Goal cards */}
       <div className="space-y-3">

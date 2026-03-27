@@ -66,6 +66,7 @@ builder.Services.AddScoped<GenerateGroceryListCommandHandler>();
 builder.Services.AddScoped<GetWeeklyAdherenceQueryHandler>();
 builder.Services.AddScoped<GetWeightTrendQueryHandler>();
 builder.Services.AddScoped<AddWeightEntryCommandHandler>();
+builder.Services.AddScoped<UpdateWeightEntryCommandHandler>();
 builder.Services.AddScoped<GetWeightEntriesQueryHandler>();
 builder.Services.AddScoped<GetProfileQueryHandler>();
 builder.Services.AddScoped<UpdateProfileCommandHandler>();

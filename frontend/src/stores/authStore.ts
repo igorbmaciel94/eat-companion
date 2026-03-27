@@ -35,9 +35,11 @@ export const useAuthStore = create<AuthState>()(
             goalType: response.user.goalType,
             heightCm: response.user.heightCm,
             weightKg: response.user.weightKg,
+            onboardingCompleted: response.user.onboardingCompleted,
             createdAt: response.user.createdAt,
           },
           isAuthenticated: true,
+          onboardingCompleted: !!response.user.onboardingCompleted,
         }),
       logout: () =>
         set({
@@ -50,9 +52,13 @@ export const useAuthStore = create<AuthState>()(
       setTokens: (accessToken: string, refreshToken: string) =>
         set({ accessToken, refreshToken }),
       updateUser: (updates: Partial<UserProfile>) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
+        set((state) => {
+          const newUser = state.user ? { ...state.user, ...updates } : null;
+          return {
+            user: newUser,
+            onboardingCompleted: newUser?.onboardingCompleted || state.onboardingCompleted,
+          };
+        }),
       setOnboardingCompleted: () => set({ onboardingCompleted: true }),
     }),
     {

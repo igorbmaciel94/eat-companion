@@ -53,7 +53,7 @@ public class RegisterCommandHandler
             accessToken,
             refreshToken.Token,
             refreshToken.ExpiresAt,
-            new UserProfileDto(user.Id, user.Email, user.DisplayName, user.CalorieTarget, user.GoalType, user.HeightCm, user.WeightKg, user.CreatedAt)
+            new UserProfileDto(user.Id, user.Email, user.DisplayName, user.CalorieTarget, user.GoalType, user.HeightCm, user.WeightKg, user.OnboardingCompleted, user.CreatedAt)
         );
     }
 }

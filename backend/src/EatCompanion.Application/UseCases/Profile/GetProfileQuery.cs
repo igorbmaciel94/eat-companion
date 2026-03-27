@@ -29,6 +29,7 @@ public class GetProfileQueryHandler
             user.GoalType,
             user.HeightCm,
             user.WeightKg,
+            user.OnboardingCompleted,
             user.CreatedAt
         );
     }

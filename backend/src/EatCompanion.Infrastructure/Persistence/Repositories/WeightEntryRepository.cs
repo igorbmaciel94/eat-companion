@@ -21,9 +21,25 @@ public class WeightEntryRepository : IWeightEntryRepository
             .ToListAsync();
     }
 
+    public async Task<WeightEntry?> GetByIdAsync(Guid id)
+    {
+        return await _context.WeightEntries.FirstOrDefaultAsync(we => we.Id == id);
+    }
+
+    public async Task<WeightEntry?> GetByUserAndDateAsync(Guid userId, DateOnly date)
+    {
+        return await _context.WeightEntries
+            .FirstOrDefaultAsync(we => we.UserId == userId && we.Date == date);
+    }
+
     public async Task AddAsync(WeightEntry entry)
     {
         await _context.WeightEntries.AddAsync(entry);
+    }
+
+    public void Update(WeightEntry entry)
+    {
+        _context.WeightEntries.Update(entry);
     }
 
     public async Task<WeightEntry?> GetLatestAsync(Guid userId)

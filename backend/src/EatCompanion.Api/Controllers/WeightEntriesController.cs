@@ -13,15 +13,18 @@ public class WeightEntriesController : ControllerBase
 {
     private readonly AddWeightEntryCommandHandler _addHandler;
     private readonly GetWeightEntriesQueryHandler _getHandler;
+    private readonly UpdateWeightEntryCommandHandler _updateHandler;
     private readonly IValidator<AddWeightEntryCommand> _addValidator;
 
     public WeightEntriesController(
         AddWeightEntryCommandHandler addHandler,
         GetWeightEntriesQueryHandler getHandler,
+        UpdateWeightEntryCommandHandler updateHandler,
         IValidator<AddWeightEntryCommand> addValidator)
     {
         _addHandler = addHandler;
         _getHandler = getHandler;
+        _updateHandler = updateHandler;
         _addValidator = addValidator;
     }
 
@@ -44,6 +47,17 @@ public class WeightEntriesController : ControllerBase
         }
 
         var result = await _addHandler.Handle(command);
+        return Ok(result);
+    }
+
+    public record UpdateWeightEntryRequest(decimal WeightKg, string? Notes);
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateWeightEntryRequest request)
+    {
+        var command = new UpdateWeightEntryCommand(GetUserId(), id, request.WeightKg, request.Notes);
+        var result = await _updateHandler.Handle(command);
+        if (result is null) return NotFound();
         return Ok(result);
     }
 

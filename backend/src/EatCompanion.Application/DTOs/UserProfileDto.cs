@@ -10,5 +10,6 @@ public record UserProfileDto(
     GoalType GoalType,
     decimal? HeightCm,
     decimal? WeightKg,
+    bool OnboardingCompleted,
     DateTime CreatedAt
 );

@@ -8,6 +8,7 @@ export interface UserProfile {
   goalType?: number;
   heightCm?: number;
   weightKg?: number;
+  onboardingCompleted?: boolean;
   createdAt: string;
 }
 

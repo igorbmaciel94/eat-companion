@@ -5,7 +5,7 @@ using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Application.UseCases.Profile;
 
-public record UpdateProfileCommand(Guid UserId, string? DisplayName, int? CalorieTarget, GoalType? GoalType, decimal? HeightCm, decimal? WeightKg);
+public record UpdateProfileCommand(Guid UserId, string? DisplayName, int? CalorieTarget, GoalType? GoalType, decimal? HeightCm, decimal? WeightKg, bool? OnboardingCompleted);
 
 public class UpdateProfileCommandHandler
 {
@@ -36,6 +36,8 @@ public class UpdateProfileCommandHandler
             user.HeightCm = command.HeightCm.Value;
         if (command.WeightKg is not null)
             user.WeightKg = command.WeightKg.Value;
+        if (command.OnboardingCompleted is not null)
+            user.OnboardingCompleted = command.OnboardingCompleted.Value;
         user.UpdatedAt = DateTime.UtcNow;
 
         _userRepository.Update(user);
@@ -49,6 +51,7 @@ public class UpdateProfileCommandHandler
             user.GoalType,
             user.HeightCm,
             user.WeightKg,
+            user.OnboardingCompleted,
             user.CreatedAt
         );
     }

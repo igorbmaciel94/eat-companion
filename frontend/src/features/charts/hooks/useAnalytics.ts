@@ -30,6 +30,7 @@ interface AnalyticsResult extends AnalyticsData {
 
 export function useAnalytics(): AnalyticsResult {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const [adherenceData, setAdherenceData] = useState<AdherenceDataPoint[]>([]);
   const [weightData, setWeightData] = useState<WeightDataPoint[]>([]);
   const [averageDailyCalories, setAverageDailyCalories] = useState(0);
@@ -87,13 +88,26 @@ export function useAnalytics(): AnalyticsResult {
         }
 
         // Map weight data
-        if (weightRes.data && Array.isArray(weightRes.data) && weightRes.data.length > 0) {
-          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const mapped: WeightDataPoint[] = weightRes.data.slice(-7).map(
-            (w: { date: string; weightKg: number }) => {
+        const weightEntries = weightRes.data && Array.isArray(weightRes.data) ? weightRes.data : [];
+        const dayNames2 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Prepend initial weight from user profile if available and not already in entries
+        const allWeightPoints: { date: string; weightKg: number }[] = [];
+        if (user?.weightKg && user?.createdAt) {
+          const startDate = user.createdAt.split('T')[0];
+          const alreadyHasStart = weightEntries.some((w: { date: string }) => w.date === startDate);
+          if (!alreadyHasStart) {
+            allWeightPoints.push({ date: startDate, weightKg: Number(user.weightKg) });
+          }
+        }
+        allWeightPoints.push(...weightEntries);
+
+        if (allWeightPoints.length > 0) {
+          const mapped: WeightDataPoint[] = allWeightPoints.slice(-7).map(
+            (w) => {
               const date = new Date(w.date + 'T00:00:00');
               return {
-                day: dayNames[date.getDay()],
+                day: dayNames2[date.getDay()],
                 weight: w.weightKg,
               };
             },
