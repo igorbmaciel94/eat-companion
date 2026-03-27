@@ -41,6 +41,17 @@ public class MealPlanRepository : IMealPlanRepository
             .ToListAsync();
     }
 
+    public async Task<List<MealPlan>> GetByUserIdWithDetailsAsync(Guid userId)
+    {
+        return await _context.MealPlans
+            .Include(mp => mp.Days)
+                .ThenInclude(d => d.Meals)
+                    .ThenInclude(m => m.Options)
+            .Where(mp => mp.UserId == userId && mp.IsActive)
+            .OrderByDescending(mp => mp.ImportedAt)
+            .ToListAsync();
+    }
+
     public async Task<MealPlanDay?> GetDayAsync(Guid mealPlanId, DateOnly date)
     {
         // Try exact date match first

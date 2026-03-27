@@ -59,11 +59,11 @@ export function useAnalytics(): AnalyticsResult {
           // If dailySummaries are populated, use them
           if (recentWeek.dailySummaries && recentWeek.dailySummaries.length > 0) {
             const mapped: AdherenceDataPoint[] = recentWeek.dailySummaries.map(
-              (d: { date: string; caloriesConsumed: number }, i: number) => {
+              (d: { date: string; caloriesConsumed: number; mealsCompleted?: number }, i: number) => {
                 const date = new Date(d.date + 'T00:00:00');
                 return {
                   day: dayNames[date.getDay()],
-                  value: d.caloriesConsumed > 0 ? 100 : 0,
+                  value: (d.mealsCompleted ?? 0) > 0 || d.caloriesConsumed > 0 ? 100 : 0,
                   fill: FILL_COLORS[i % 2],
                 };
               },

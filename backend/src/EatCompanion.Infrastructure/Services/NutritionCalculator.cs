@@ -60,6 +60,7 @@ public class NutritionCalculator : INutritionCalculator
             consumedProtein,
             consumedCarbs,
             consumedFat,
+            0,
             meals
         );
     }

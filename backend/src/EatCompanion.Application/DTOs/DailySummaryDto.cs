@@ -7,5 +7,6 @@ public record DailySummaryDto(
     decimal ProteinConsumed,
     decimal CarbsConsumed,
     decimal FatConsumed,
+    int MealsCompleted,
     List<MealDto> Meals
 );

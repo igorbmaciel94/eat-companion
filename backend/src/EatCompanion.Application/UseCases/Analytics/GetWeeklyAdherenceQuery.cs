@@ -23,7 +23,7 @@ public class GetWeeklyAdherenceQueryHandler
     {
         var results = new List<WeeklyAnalyticsDto>();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var plans = await _mealPlanRepository.GetByUserIdAsync(query.UserId);
+        var plans = await _mealPlanRepository.GetByUserIdWithDetailsAsync(query.UserId);
 
         for (int i = 0; i < query.Weeks; i++)
         {
@@ -69,6 +69,7 @@ public class GetWeeklyAdherenceQueryHandler
                     proteinConsumed,
                     carbsConsumed,
                     fatConsumed,
+                    completedDayLogs.Count,
                     new List<MealDto>()
                 ));
             }

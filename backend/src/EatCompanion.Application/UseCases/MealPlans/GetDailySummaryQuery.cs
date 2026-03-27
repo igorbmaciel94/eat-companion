@@ -45,6 +45,7 @@ public class GetDailySummaryQueryHandler
             totalProtein,
             totalCarbs,
             totalFat,
+            0,
             meals
         );
     }

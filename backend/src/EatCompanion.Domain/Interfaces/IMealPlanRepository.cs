@@ -7,6 +7,7 @@ public interface IMealPlanRepository
     Task<MealPlan?> GetByIdAsync(Guid id);
     Task<MealPlan?> GetByIdWithDetailsAsync(Guid id);
     Task<List<MealPlan>> GetByUserIdAsync(Guid userId);
+    Task<List<MealPlan>> GetByUserIdWithDetailsAsync(Guid userId);
     Task<MealPlanDay?> GetDayAsync(Guid mealPlanId, DateOnly date);
     Task<MealOption?> GetMealOptionAsync(Guid optionId);
     Task<List<MealOption>> GetSiblingOptionsAsync(Guid mealId);
