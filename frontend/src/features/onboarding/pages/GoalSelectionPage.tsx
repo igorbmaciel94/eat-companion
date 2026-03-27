@@ -4,6 +4,8 @@ import { Icon } from '../../../components/ui/Icon';
 import { profileApi } from '../../../api/profile';
 import { useAuthStore } from '../../../stores/authStore';
 
+// Note: onboardingCompleted is set in CalorieTargetPage (final step)
+
 const goals = [
   {
     icon: 'balance',
@@ -27,7 +29,6 @@ const goals = [
 
 export function GoalSelectionPage() {
   const navigate = useNavigate();
-  const setOnboardingCompleted = useAuthStore((s) => s.setOnboardingCompleted);
   const updateUser = useAuthStore((s) => s.updateUser);
   const [loading, setLoading] = useState<number | null>(null);
 
@@ -36,12 +37,9 @@ export function GoalSelectionPage() {
     try {
       const { data } = await profileApi.update({ goalType });
       updateUser({ goalType: data.goalType });
-      setOnboardingCompleted();
-      navigate('/');
+      navigate('/onboarding/calories');
     } catch {
-      // Navigate anyway — goal can be updated later in profile
-      setOnboardingCompleted();
-      navigate('/');
+      navigate('/onboarding/calories');
     } finally {
       setLoading(null);
     }
@@ -51,7 +49,7 @@ export function GoalSelectionPage() {
     <div className="flex flex-col flex-1">
       {/* Step indicator */}
       <p className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-        Step 1 of 1
+        Step 1 of 2
       </p>
 
       {/* Heading */}
