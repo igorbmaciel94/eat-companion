@@ -56,6 +56,7 @@ builder.Services.AddScoped<RefreshTokenCommandHandler>();
 builder.Services.AddScoped<GetMealPlansQueryHandler>();
 builder.Services.AddScoped<GetMealPlanQueryHandler>();
 builder.Services.AddScoped<GetDailySummaryQueryHandler>();
+builder.Services.AddScoped<GetWeeklySummaryQueryHandler>();
 builder.Services.AddScoped<SelectMealOptionCommandHandler>();
 builder.Services.AddScoped<ImportMealPlanCommandHandler>();
 builder.Services.AddScoped<UpdateMealOptionCommandHandler>();

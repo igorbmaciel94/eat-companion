@@ -23,6 +23,7 @@ public class MealPlansController : ControllerBase
     private readonly GetMealPlansQueryHandler _getMealPlansHandler;
     private readonly GetMealPlanQueryHandler _getMealPlanHandler;
     private readonly GetDailySummaryQueryHandler _getDailySummaryHandler;
+    private readonly GetWeeklySummaryQueryHandler _getWeeklySummaryHandler;
     private readonly SelectMealOptionCommandHandler _selectOptionHandler;
     private readonly UpdateMealOptionCommandHandler _updateOptionHandler;
     private readonly AddIngredientCommandHandler _addIngredientHandler;
@@ -36,6 +37,7 @@ public class MealPlansController : ControllerBase
         GetMealPlansQueryHandler getMealPlansHandler,
         GetMealPlanQueryHandler getMealPlanHandler,
         GetDailySummaryQueryHandler getDailySummaryHandler,
+        GetWeeklySummaryQueryHandler getWeeklySummaryHandler,
         SelectMealOptionCommandHandler selectOptionHandler,
         UpdateMealOptionCommandHandler updateOptionHandler,
         AddIngredientCommandHandler addIngredientHandler,
@@ -48,6 +50,7 @@ public class MealPlansController : ControllerBase
         _getMealPlansHandler = getMealPlansHandler;
         _getMealPlanHandler = getMealPlanHandler;
         _getDailySummaryHandler = getDailySummaryHandler;
+        _getWeeklySummaryHandler = getWeeklySummaryHandler;
         _selectOptionHandler = selectOptionHandler;
         _updateOptionHandler = updateOptionHandler;
         _addIngredientHandler = addIngredientHandler;
@@ -128,6 +131,13 @@ public class MealPlansController : ControllerBase
     public async Task<IActionResult> GetDaySummary(Guid id, DateOnly date)
     {
         var result = await _getDailySummaryHandler.Handle(new GetDailySummaryQuery(id, date, GetUserId()));
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/week")]
+    public async Task<IActionResult> GetWeekSummary(Guid id)
+    {
+        var result = await _getWeeklySummaryHandler.Handle(new GetWeeklySummaryQuery(id, GetUserId()));
         return Ok(result);
     }
 

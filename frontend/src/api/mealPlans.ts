@@ -26,6 +26,8 @@ export const mealPlansApi = {
   getById: (id: string) => client.get<MealPlan>(`/meal-plans/${id}`),
   getDay: (id: string, date: string) =>
     client.get<DailySummary>(`/meal-plans/${id}/days/${date}`),
+  getWeek: (id: string) =>
+    client.get<DailySummary[]>(`/meal-plans/${id}/week`),
   selectOption: (planId: string, mealId: string, optionId: string) =>
     client.put(`/meal-plans/${planId}/meals/${mealId}/options/${optionId}/select`),
 

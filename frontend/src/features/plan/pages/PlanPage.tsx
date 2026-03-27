@@ -8,6 +8,14 @@ import type { Meal, MealOption, Ingredient } from '../../../types';
 
 type ViewMode = 'today' | 'weekly';
 
+interface WeekDay {
+  date: string;
+  dayLabel: string;
+  meals: Meal[];
+  totalCalories: number;
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MEALTYPE_LABELS: Record<number | string, string> = {
   0: 'Breakfast', 1: 'Morning Snack', 2: 'Lunch', 3: 'Afternoon Snack',
   4: 'Dinner', 5: 'Evening Snack', 6: 'Snack',
@@ -83,6 +91,8 @@ export function PlanPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [weekDays, setWeekDays] = useState<WeekDay[]>([]);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Auto-load active plan if localStorage was cleared
@@ -123,9 +133,44 @@ export function PlanPage() {
     }
   }, [activePlanId, isAuthenticated]);
 
+  const fetchWeek = useCallback(async () => {
+    if (!isAuthenticated || !activePlanId) return;
+    setLoading(true);
+    try {
+      const { data } = await mealPlansApi.getWeek(activePlanId);
+      if (Array.isArray(data)) {
+        const today = new Date().toISOString().split('T')[0];
+        const mapped: WeekDay[] = data.map((d) => {
+          const date = new Date(d.date + 'T00:00:00');
+          const totalCal = d.meals?.reduce((sum: number, m: Meal) => {
+            const sel = m.options?.find(isOptionSelected) || m.options?.[0];
+            return sum + (sel?.calories || 0);
+          }, 0) || 0;
+          return {
+            date: d.date,
+            dayLabel: DAY_NAMES[date.getDay()],
+            meals: d.meals || [],
+            totalCalories: totalCal,
+          };
+        });
+        setWeekDays(mapped);
+        // Auto-expand today
+        const todayEntry = mapped.find((d) => d.date === today);
+        if (todayEntry && !expandedDay) {
+          setExpandedDay(todayEntry.date);
+        }
+      }
+    } catch {
+      // keep current state
+    } finally {
+      setLoading(false);
+    }
+  }, [activePlanId, isAuthenticated]);
+
   useEffect(() => {
-    fetchDay();
-  }, [fetchDay]);
+    if (viewMode === 'today') fetchDay();
+    else fetchWeek();
+  }, [fetchDay, fetchWeek, viewMode]);
 
   const handleSelectOption = async (meal: Meal, option: MealOption) => {
     if (!activePlanId || isOptionSelected(option) || editingOptionId) return;
@@ -636,17 +681,113 @@ export function PlanPage() {
           </div>
         </>
       ) : (
-        /* Weekly view placeholder */
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center mb-4">
-            <Icon name="date_range" size={28} className="text-primary" />
+        /* Weekly accordion view */
+        <div className="mb-6">
+          <h2 className="text-xs font-label font-medium uppercase tracking-widest text-on-surface-variant mb-3">
+            Weekly Plan
+          </h2>
+
+          {weekDays.length === 0 && !loading && (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Icon name="calendar_today" size={32} className="text-on-surface-variant/40 mb-3" />
+              <p className="text-on-surface-variant text-sm">No weekly plan available.</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {weekDays.map((day) => {
+              const isToday = day.date === new Date().toISOString().split('T')[0];
+              const isExpanded = expandedDay === day.date;
+              const date = new Date(day.date + 'T00:00:00');
+              const dayNum = date.getDate();
+
+              return (
+                <div key={day.date} className="bg-surface-container-lowest rounded-2xl editorial-shadow overflow-hidden">
+                  {/* Accordion header */}
+                  <button
+                    onClick={() => setExpandedDay(isExpanded ? null : day.date)}
+                    className="w-full flex items-center gap-3 p-4 text-left"
+                  >
+                    {/* Day number badge */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isToday ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'
+                    }`}>
+                      <span className="text-sm font-headline font-bold">{dayNum}</span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-headline font-semibold text-sm ${
+                        isToday ? 'text-primary' : 'text-on-surface'
+                      }`}>
+                        {day.dayLabel}
+                        {isToday && <span className="text-xs font-label font-normal text-primary ml-2">Today</span>}
+                      </p>
+                      <p className="text-on-surface-variant text-xs">
+                        {day.meals.length} meals · {day.totalCalories} kcal
+                      </p>
+                    </div>
+
+                    <Icon
+                      name={isExpanded ? 'expand_less' : 'expand_more'}
+                      size={20}
+                      className="text-on-surface-variant flex-shrink-0"
+                    />
+                  </button>
+
+                  {/* Expanded content */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-3 border-t border-outline-variant/30">
+                      {[...day.meals].sort((a, b) => {
+                        const order: Record<string, number> = {
+                          Breakfast: 0, '0': 0, MorningSnack: 1, '1': 1,
+                          Lunch: 2, '2': 2, AfternoonSnack: 3, '3': 3,
+                          Dinner: 4, '4': 4, EveningSnack: 5, '5': 5,
+                          Snack: 6, '6': 6,
+                        };
+                        return (order[String(a.mealType)] ?? 99) - (order[String(b.mealType)] ?? 99);
+                      }).map((meal) => {
+                        const mealLabel = MEALTYPE_LABELS[meal.mealType ?? 0] || meal.type || 'Meal';
+                        const selected = meal.options?.find(isOptionSelected) || meal.options?.[0];
+
+                        return (
+                          <div key={meal.id} className="pt-3">
+                            <p className="text-[10px] font-label font-medium uppercase tracking-widest text-on-surface-variant mb-1">
+                              {mealLabel}
+                            </p>
+                            {selected && (
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-headline font-semibold text-on-surface text-sm truncate">
+                                    {getOptionName(selected)}
+                                  </p>
+                                  {selected.ingredients?.length > 0 && (
+                                    <p className="text-xs text-on-surface-variant mt-0.5 truncate">
+                                      {selected.ingredients.slice(0, 3).map((ing) => ing.namePt || ing.name).join(', ')}
+                                      {selected.ingredients.length > 3 && ` +${selected.ingredients.length - 3}`}
+                                    </p>
+                                  )}
+                                </div>
+                                {selected.calories > 0 && (
+                                  <span className="text-xs font-label font-medium px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container flex-shrink-0 ml-2">
+                                    {selected.calories} kcal
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {meal.options?.length > 1 && (
+                              <p className="text-[10px] text-on-surface-variant/60 mt-0.5">
+                                {meal.options.length} options available
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <p className="text-on-surface font-headline font-semibold text-base mb-1">
-            Same plan for all days
-          </p>
-          <p className="text-on-surface-variant text-sm">
-            Your meal plan repeats daily. Switch to Today to see your options.
-          </p>
         </div>
       )}
 
