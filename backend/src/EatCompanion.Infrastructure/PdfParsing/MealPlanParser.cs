@@ -39,7 +39,7 @@ public class MealPlanParser
         // Find all section headers
         FindHeaders(fullText, PortugueseMealPatterns.BreakfastHeader, SectionType.Breakfast, MealType.Breakfast, sectionStarts);
         FindHeaders(fullText, PortugueseMealPatterns.LunchHeader, SectionType.Lunch, MealType.Lunch, sectionStarts);
-        FindHeaders(fullText, PortugueseMealPatterns.SnackHeader, SectionType.Snack, MealType.Snack, sectionStarts);
+        FindHeaders(fullText, PortugueseMealPatterns.SnackHeader, SectionType.Snack, MealType.AfternoonSnack, sectionStarts);
         FindHeaders(fullText, PortugueseMealPatterns.DinnerHeader, SectionType.Dinner, MealType.Dinner, sectionStarts);
         FindHeaders(fullText, PortugueseMealPatterns.RecommendationsHeader, SectionType.Recommendations, null, sectionStarts);
         FindHeaders(fullText, PortugueseMealPatterns.RecipeHeader, SectionType.Recipe, null, sectionStarts);
@@ -129,6 +129,9 @@ public class MealPlanParser
 
     internal List<ParsedMealOption> ParseOptions(string sectionText)
     {
+        // Strip noise lines (nutritionist watermarks, recommendations, reference info)
+        sectionText = StripNoiseLines(sectionText);
+
         // Remove option labels like "Opção 1", "Opção 2"
         sectionText = PortugueseMealPatterns.OptionLabel.Replace(sectionText, "");
 
@@ -318,5 +321,29 @@ public class MealPlanParser
         name = name.Trim().Trim('+', ' ', '\t', '\n', '\r');
 
         return name;
+    }
+
+    private static string StripNoiseLines(string text)
+    {
+        var lines = text.Split('\n');
+        var cleaned = lines.Where(line =>
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed)) return true;
+            // Remove lines with nutritionist name/number patterns (e.g., "Teresa 5235N", "Teresa Valadar 5235N")
+            if (Regex.IsMatch(trimmed, @"Teresa\b", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"^\d+N\s*$")) return false;
+            // Remove recommendation-style numbered items (e.g., "1- Beber pelo menos 2L...")
+            if (Regex.IsMatch(trimmed, @"^\d+\s*[-–]\s+\w", RegexOptions.IgnoreCase)) return false;
+            // Remove lines with nutritional reference info (e.g., "150g de peixe: corresponde a...")
+            if (trimmed.Contains("corresponde a", StringComparison.OrdinalIgnoreCase)) return false;
+            // Remove advisory text patterns
+            if (Regex.IsMatch(trimmed, @"\bimportante\s+manter\b", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"\bobrigat[óo]rio\b", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"\bApesar\s+a\s+sopa\b", RegexOptions.IgnoreCase)) return false;
+            if (Regex.IsMatch(trimmed, @"\bsempre\s+na\s+Valadar\b", RegexOptions.IgnoreCase)) return false;
+            return true;
+        });
+        return string.Join("\n", cleaned);
     }
 }

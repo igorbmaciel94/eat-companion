@@ -9,7 +9,7 @@ public static class PortugueseMealPatterns
     public static readonly Regex LunchHeader = new(@"\bAlmo[çc]o\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     public static readonly Regex SnackHeader = new(@"Lanche(?:\s+da\s+tarde)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     public static readonly Regex DinnerHeader = new(@"\bJantar\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    public static readonly Regex RecommendationsHeader = new(@"Recomenda[çc][õo]es", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    public static readonly Regex RecommendationsHeader = new(@"Recomenda[çc][õo]es|RECOMENDA", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     // Only match "Bolo da caneca" as a section header when it appears on its own line (not inline in an option)
     // Match "Bolo da caneca de chocolate\nIngredientes:" or standalone "Receita" header
     public static readonly Regex RecipeHeader = new(@"^Bolo\s+da\s+caneca\s+de\s+chocolate\s*$", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
@@ -30,7 +30,7 @@ public static class PortugueseMealPatterns
     public static readonly Regex QuantityPorcao = new(@"(\d+)\s+porç[ãa]o\s+de\s+(.+?)(?:\s*[+\n]|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // Noise patterns to remove
-    public static readonly Regex NutritionistName = new(@"Teresa\s+Valadar\s+\d+N", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    public static readonly Regex NutritionistName = new(@"Teresa\s+(?:Valadar\s+)?\d+N?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // General food item with "de" connector
     public static readonly Regex GeneralDe = new(@"(\d+)\s+(?:de\s+)?(.+?)(?:\s*[+\n]|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);

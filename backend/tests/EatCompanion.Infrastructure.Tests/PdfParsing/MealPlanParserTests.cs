@@ -103,7 +103,7 @@ Opção 2";
         var pages = new List<string> { SnackText + "\n" + RecommendationsText };
         var result = _parser.Parse(pages);
 
-        var snack = result.Meals.FirstOrDefault(m => m.Type == MealType.Snack);
+        var snack = result.Meals.FirstOrDefault(m => m.Type == MealType.AfternoonSnack);
         Assert.NotNull(snack);
         Assert.Equal(4, snack.Options.Count);
     }
@@ -186,7 +186,7 @@ Opção 2";
 
         Assert.Contains(result.Meals, m => m.Type == MealType.Breakfast);
         Assert.Contains(result.Meals, m => m.Type == MealType.Lunch);
-        Assert.Contains(result.Meals, m => m.Type == MealType.Snack);
+        Assert.Contains(result.Meals, m => m.Type == MealType.AfternoonSnack);
         Assert.Contains(result.Meals, m => m.Type == MealType.Dinner);
         Assert.Equal(4, result.Meals.Count);
     }
@@ -200,7 +200,7 @@ Opção 2";
         Assert.DoesNotContain(result.Meals, m =>
             m.Type != MealType.Breakfast &&
             m.Type != MealType.Lunch &&
-            m.Type != MealType.Snack &&
+            m.Type != MealType.AfternoonSnack &&
             m.Type != MealType.Dinner);
     }
 
@@ -217,7 +217,7 @@ option 3 text";
         var pages = new List<string> { text };
         var result = _parser.Parse(pages);
 
-        var snack = result.Meals.FirstOrDefault(m => m.Type == MealType.Snack);
+        var snack = result.Meals.FirstOrDefault(m => m.Type == MealType.AfternoonSnack);
         Assert.NotNull(snack);
         Assert.Equal(3, snack.Options.Count);
     }

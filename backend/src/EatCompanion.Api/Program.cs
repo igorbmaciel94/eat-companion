@@ -40,7 +40,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPdfParsingService, ClaudePdfParsingService>();
+builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
 builder.Services.AddScoped<IGroceryListGenerator, GroceryListGenerator>();
 builder.Services.AddScoped<INutritionCalculator, NutritionCalculator>();
 
