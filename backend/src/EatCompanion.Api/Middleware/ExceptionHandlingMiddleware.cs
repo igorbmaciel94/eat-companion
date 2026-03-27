@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using AppNotFoundException = EatCompanion.Application.Common.NotFoundException;
+using AppUnauthorizedException = EatCompanion.Application.Common.UnauthorizedException;
 using AppValidationException = EatCompanion.Application.Common.ValidationException;
 
 namespace EatCompanion.Api.Middleware;
@@ -21,6 +22,21 @@ public class ExceptionHandlingMiddleware
         try
         {
             await _next(context);
+        }
+        catch (AppUnauthorizedException ex)
+        {
+            _logger.LogWarning("Unauthorized access attempt");
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/problem+json";
+
+            var problemDetails = new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = ex.Message
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
         }
         catch (AppValidationException ex)
         {

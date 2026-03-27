@@ -50,12 +50,7 @@ public class AuthController : ControllerBase
     {
         var validation = await _loginValidator.ValidateAsync(command);
         if (!validation.IsValid)
-        {
-            var errors = validation.Errors
-                .GroupBy(e => e.PropertyName)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-            throw new Application.Common.ValidationException(errors);
-        }
+            throw new Application.Common.UnauthorizedException();
 
         var result = await _loginHandler.Handle(command);
         return Ok(result);

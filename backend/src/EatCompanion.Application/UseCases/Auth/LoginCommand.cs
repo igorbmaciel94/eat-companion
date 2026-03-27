@@ -27,7 +27,7 @@ public class LoginCommandHandler
     {
         var user = await _userRepository.GetByEmailAsync(command.Email.ToLowerInvariant());
         if (user is null || !BCrypt.Net.BCrypt.Verify(command.Password, user.PasswordHash))
-            throw new Common.ValidationException("Credentials", "Invalid email or password.");
+            throw new Common.UnauthorizedException();
 
         var refreshToken = _tokenService.GenerateRefreshToken(user.Id);
         await _userRepository.AddRefreshTokenAsync(refreshToken);
