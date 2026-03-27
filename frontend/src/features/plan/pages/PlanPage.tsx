@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
+import { mealPlansApi } from '../../../api/mealPlans';
+import { useUiStore } from '../../../stores/uiStore';
+import { useAuthStore } from '../../../stores/authStore';
 
 type ViewMode = 'today' | 'weekly';
 
@@ -37,14 +40,66 @@ const mockMeals: PlanMeal[] = [
   },
 ];
 
-const CALORIE_TARGET = 2200;
+const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
 export function PlanPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('today');
+  const activePlanId = useUiStore((s) => s.activeMealPlanId);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const [meals, setMeals] = useState<PlanMeal[]>(mockMeals);
+  const [loading, setLoading] = useState(false);
 
-  const totalCalories = mockMeals.reduce((sum, m) => sum + m.calories, 0);
+  const CALORIE_TARGET = user?.calorieTarget || 2200;
+
+  useEffect(() => {
+    if (!isAuthenticated || !activePlanId) return;
+
+    const fetchPlan = async () => {
+      setLoading(true);
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data } = await mealPlansApi.getDay(activePlanId, today);
+
+        if (data && data.meals && data.meals.length > 0) {
+          const apiMeals: PlanMeal[] = data.meals.map((m: { type?: string; mealType?: number; options?: { isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
+            const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
+            return {
+              type: MEALTYPE_LABELS[typeof m.mealType === 'number' ? m.mealType : 0] || m.type || 'Meal',
+              name: selected?.description || selected?.name || 'Meal',
+              calories: selected?.calories || 0,
+              protein: selected?.proteinGrams || selected?.protein || 0,
+            };
+          });
+          setMeals(apiMeals);
+        }
+      } catch {
+        // Keep mock data on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlan();
+  }, [activePlanId, isAuthenticated, CALORIE_TARGET]);
+
+  const totalCalories = meals.reduce((sum, m) => sum + m.calories, 0);
   const remaining = CALORIE_TARGET - totalCalories;
+
+  // Format today's date
+  const today = new Date();
+  const dayNum = today.getDate();
+  const monthYear = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+  if (loading) {
+    return (
+      <div className="py-2 flex items-center justify-center min-h-[50vh]">
+        <p className="text-on-surface-variant text-sm">Loading plan...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="py-2">
@@ -75,10 +130,10 @@ export function PlanPage() {
       {/* Date display */}
       <div className="mb-6">
         <div className="flex items-baseline gap-3">
-          <span className="text-5xl font-headline font-bold text-on-surface tracking-tight">12</span>
+          <span className="text-5xl font-headline font-bold text-on-surface tracking-tight">{dayNum}</span>
           <div>
-            <p className="text-on-surface-variant font-label text-sm uppercase tracking-widest">May 2025</p>
-            <p className="text-on-surface font-headline font-medium text-lg">Monday</p>
+            <p className="text-on-surface-variant font-label text-sm uppercase tracking-widest">{monthYear}</p>
+            <p className="text-on-surface font-headline font-medium text-lg">{dayName}</p>
           </div>
         </div>
       </div>
@@ -93,9 +148,9 @@ export function PlanPage() {
 
       {/* Meal cards */}
       <div className="space-y-3 mb-6">
-        {mockMeals.map((meal) => (
+        {meals.map((meal, idx) => (
           <div
-            key={meal.type}
+            key={meal.type + idx}
             className="bg-surface-container-lowest rounded-2xl overflow-hidden editorial-shadow"
           >
             <div className="flex gap-3 p-3">

@@ -1,9 +1,9 @@
 import client from './client';
-import type { GroceryList } from '../types';
 
 export const groceryListsApi = {
-  getByMealPlan: (mealPlanId: string) =>
-    client.get<GroceryList>(`/meal-plans/${mealPlanId}/grocery-list`),
-  toggleItem: (listId: string, itemId: string, checked: boolean) =>
-    client.put(`/grocery-lists/${listId}/items/${itemId}`, { checked }),
+  generate: (mealPlanId: string, startDate: string, endDate: string) =>
+    client.post('/grocery-lists/generate', { mealPlanId, startDate, endDate }),
+  getById: (id: string) => client.get(`/grocery-lists/${id}`),
+  toggleItem: (listId: string, itemId: string) =>
+    client.put(`/grocery-lists/${listId}/items/${itemId}/toggle`),
 };

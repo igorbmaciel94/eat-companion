@@ -1,11 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
 import { Button } from '../../../components/ui/Button';
+import { useAuthStore } from '../../../stores/authStore';
 
 export function ProfilePage() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
+
+  const displayName = user?.displayName || 'Elena Rodriguez';
+  const calorieTarget = user?.calorieTarget || 2200;
 
   const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
@@ -20,9 +28,11 @@ export function ProfilePage() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="font-headline font-bold text-on-surface text-xl">
-              Elena Rodriguez
+              {displayName}
             </h1>
-            <p className="text-on-surface-variant text-sm">Premium Member</p>
+            <p className="text-on-surface-variant text-sm">
+              {isAuthenticated ? 'Premium Member' : 'Guest'}
+            </p>
           </div>
           <span className="inline-flex items-center bg-primary-container text-on-primary-container text-xs font-label font-medium px-2.5 py-1 rounded-full">
             Active
@@ -66,7 +76,7 @@ export function ProfilePage() {
               <p className="font-headline font-medium text-on-surface text-sm">
                 Daily Calorie Target
               </p>
-              <p className="text-on-surface-variant text-xs mt-0.5">2,200 kcal</p>
+              <p className="text-on-surface-variant text-xs mt-0.5">{calorieTarget.toLocaleString()} kcal</p>
             </div>
             <Icon name="chevron_right" size={20} className="text-on-surface-variant" />
           </button>

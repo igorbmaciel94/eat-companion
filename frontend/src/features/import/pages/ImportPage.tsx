@@ -1,7 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../../components/ui/Icon';
 import { ProgressBar } from '../../../components/ui/ProgressBar';
+import { mealPlansApi } from '../../../api/mealPlans';
+import { useUiStore } from '../../../stores/uiStore';
 
 export function ImportPage() {
   const navigate = useNavigate();
@@ -9,44 +11,33 @@ export function ImportPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState('');
+  const [error, setError] = useState('');
 
-  const startProcessing = useCallback((name: string) => {
-    setFileName(name);
-    setIsProcessing(true);
-    setProgress(0);
-  }, []);
-
-  // Simulate processing progress
-  useEffect(() => {
-    if (!isProcessing) return;
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        // Slow start, faster in the middle, slow at end
-        const increment = prev < 30 ? 3 : prev < 70 ? 5 : 2;
-        return Math.min(prev + increment, 100);
-      });
-    }, 150);
-
-    return () => clearInterval(interval);
-  }, [isProcessing]);
-
-  // Navigate when complete
-  useEffect(() => {
-    if (progress >= 100) {
-      const timeout = setTimeout(() => navigate('/plan'), 600);
-      return () => clearTimeout(timeout);
-    }
-  }, [progress, navigate]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      startProcessing(file.name);
+    if (!file) return;
+
+    setFileName(file.name);
+    setIsProcessing(true);
+    setProgress(10);
+    setError('');
+
+    try {
+      setProgress(30);
+      const { data } = await mealPlansApi.import(file);
+      setProgress(80);
+
+      // Store the active meal plan
+      useUiStore.getState().setActiveMealPlanId(data.mealPlanId);
+
+      setProgress(100);
+      // Navigate after brief delay
+      setTimeout(() => navigate('/plan'), 600);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
+      setIsProcessing(false);
+      setProgress(0);
+      setError(axiosErr.response?.data?.detail || 'Failed to import PDF');
     }
   };
 
@@ -88,6 +79,9 @@ export function ImportPage() {
             <p className="text-on-surface-variant text-sm mb-6 max-w-[240px]">
               Select a PDF document containing your nutrition or meal plan
             </p>
+            {error && (
+              <div className="text-error text-sm mb-4">{error}</div>
+            )}
             <button
               onClick={() => fileInputRef.current?.click()}
               className="bg-primary text-on-primary rounded-full px-8 py-3 font-medium text-sm transition-colors hover:bg-primary-dim"

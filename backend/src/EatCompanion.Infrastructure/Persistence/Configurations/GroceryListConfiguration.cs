@@ -21,8 +21,13 @@ public class GroceryListConfiguration : IEntityTypeConfiguration<GroceryList>
         builder.Property(gl => gl.CreatedAt)
             .IsRequired();
 
+        builder.HasOne(gl => gl.User)
+            .WithMany(u => u.GroceryLists)
+            .HasForeignKey(gl => gl.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne(gl => gl.MealPlan)
-            .WithMany()
+            .WithMany(mp => mp.GroceryLists)
             .HasForeignKey(gl => gl.MealPlanId)
             .OnDelete(DeleteBehavior.Restrict);
 

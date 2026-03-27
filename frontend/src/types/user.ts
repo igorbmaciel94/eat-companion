@@ -3,23 +3,16 @@ export type GoalType = 'lose_weight' | 'gain_muscle' | 'maintain' | 'eat_healthi
 export interface UserProfile {
   id: string;
   email: string;
-  name: string;
-  avatarUrl?: string;
-  goal?: GoalType;
-  targetCalories?: number;
-  targetProtein?: number;
-  targetCarbs?: number;
-  targetFat?: number;
+  displayName: string;
+  calorieTarget?: number;
+  goalType?: number;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface WeightEntry {
   id: string;
   date: string;
-  weight: number;
-  unit: 'kg' | 'lbs';
-  notes?: string;
+  weightKg: number;
 }
 
 export interface WeeklyAnalytics {

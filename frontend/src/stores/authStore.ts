@@ -10,6 +10,7 @@ interface AuthState {
   login: (response: AuthResponse) => void;
   logout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  updateUser: (updates: Partial<UserProfile>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,7 +24,14 @@ export const useAuthStore = create<AuthState>()(
         set({
           accessToken: response.accessToken,
           refreshToken: response.refreshToken,
-          user: response.user as unknown as UserProfile,
+          user: {
+            id: response.user.id,
+            email: response.user.email,
+            displayName: response.user.displayName,
+            calorieTarget: response.user.calorieTarget,
+            goalType: response.user.goalType,
+            createdAt: response.user.createdAt,
+          },
           isAuthenticated: true,
         }),
       logout: () =>
@@ -35,6 +43,10 @@ export const useAuthStore = create<AuthState>()(
         }),
       setTokens: (accessToken: string, refreshToken: string) =>
         set({ accessToken, refreshToken }),
+      updateUser: (updates: Partial<UserProfile>) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
     }),
     {
       name: 'auth-storage',

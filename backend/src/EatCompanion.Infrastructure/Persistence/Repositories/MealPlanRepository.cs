@@ -43,11 +43,22 @@ public class MealPlanRepository : IMealPlanRepository
 
     public async Task<MealPlanDay?> GetDayAsync(Guid mealPlanId, DateOnly date)
     {
-        return await _context.MealPlanDays
+        // Try exact date match first
+        var day = await _context.MealPlanDays
             .Include(d => d.Meals)
                 .ThenInclude(m => m.Options)
                     .ThenInclude(o => o.Ingredients)
             .FirstOrDefaultAsync(d => d.MealPlanId == mealPlanId && d.Date == date);
+
+        if (day is not null) return day;
+
+        // Fall back to matching by DayOfWeek (for template-based plans)
+        var dayOfWeek = (int)date.DayOfWeek;
+        return await _context.MealPlanDays
+            .Include(d => d.Meals)
+                .ThenInclude(m => m.Options)
+                    .ThenInclude(o => o.Ingredients)
+            .FirstOrDefaultAsync(d => d.MealPlanId == mealPlanId && d.DayOfWeek == dayOfWeek);
     }
 
     public async Task<MealOption?> GetMealOptionAsync(Guid optionId)

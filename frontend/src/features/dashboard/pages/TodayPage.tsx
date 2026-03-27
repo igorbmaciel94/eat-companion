@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '../../../components/ui/Icon';
 import { ProgressBar } from '../../../components/ui/ProgressBar';
+import { mealPlansApi } from '../../../api/mealPlans';
+import { mealLogsApi } from '../../../api/mealLogs';
+import { useUiStore } from '../../../stores/uiStore';
+import { useAuthStore } from '../../../stores/authStore';
 
 type MealStatus = 'pending' | 'completed' | 'skipped';
 
@@ -11,9 +15,11 @@ interface Meal {
   protein?: number;
   status: MealStatus;
   imageUrl?: string;
+  mealId?: string;
+  optionId?: string;
 }
 
-const initialMeals: Meal[] = [
+const mockMeals: Meal[] = [
   {
     type: 'Breakfast',
     name: 'Avocado Toast',
@@ -41,11 +47,51 @@ const initialMeals: Meal[] = [
   },
 ];
 
-const CALORIE_TARGET = 2200;
-const PROTEIN_TARGET = 120;
+const MEALTYPE_LABELS = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
 export function TodayPage() {
-  const [meals, setMeals] = useState<Meal[]>(initialMeals);
+  const activePlanId = useUiStore((s) => s.activeMealPlanId);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const [meals, setMeals] = useState<Meal[]>(mockMeals);
+  const [loading, setLoading] = useState(false);
+
+  const CALORIE_TARGET = user?.calorieTarget || 2200;
+  const PROTEIN_TARGET = 120;
+
+  useEffect(() => {
+    if (!isAuthenticated || !activePlanId) return;
+
+    const fetchToday = async () => {
+      setLoading(true);
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data } = await mealPlansApi.getDay(activePlanId, today);
+
+        if (data && data.meals && data.meals.length > 0) {
+          const apiMeals: Meal[] = data.meals.map((m: { id: string; type?: string; mealType?: number; options?: { id: string; isSelected?: boolean; selected?: boolean; description?: string; name?: string; calories?: number; proteinGrams?: number; protein?: number }[] }) => {
+            const selected = m.options?.find((o) => o.isSelected || o.selected) || m.options?.[0];
+            return {
+              type: MEALTYPE_LABELS[typeof m.mealType === 'number' ? m.mealType : 0] || m.type || 'Meal',
+              name: selected?.description || selected?.name || 'Meal',
+              calories: selected?.calories || 0,
+              protein: selected?.proteinGrams || selected?.protein || 0,
+              status: 'pending' as MealStatus,
+              mealId: m.id,
+              optionId: selected?.id,
+            };
+          });
+          setMeals(apiMeals);
+        }
+      } catch {
+        // Keep mock data on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchToday();
+  }, [activePlanId, isAuthenticated, CALORIE_TARGET]);
 
   const completedCalories = meals
     .filter((m) => m.status === 'completed')
@@ -57,34 +103,76 @@ export function TodayPage() {
 
   const remaining = CALORIE_TARGET - completedCalories;
 
-  const toggleMeal = (idx: number) => {
+  const toggleMeal = async (idx: number) => {
+    const meal = meals[idx];
+    const newStatus: MealStatus = meal.status === 'completed' ? 'pending' : 'completed';
+
     setMeals((prev) =>
       prev.map((m, i) =>
-        i === idx
-          ? { ...m, status: m.status === 'completed' ? 'pending' : 'completed' }
-          : m,
+        i === idx ? { ...m, status: newStatus } : m,
       ),
     );
+
+    // Log to backend if authenticated
+    if (isAuthenticated) {
+      try {
+        const mealTypeMap: Record<string, number> = { Breakfast: 0, Lunch: 1, Snack: 2, Dinner: 3 };
+        await mealLogsApi.log({
+          date: new Date().toISOString().split('T')[0],
+          mealType: mealTypeMap[meal.type] ?? 0,
+          mealOptionId: meal.optionId,
+          status: newStatus === 'completed' ? 1 : 0,
+        });
+      } catch { /* ignore logging errors */ }
+    }
   };
 
-  const skipMeal = (idx: number) => {
+  const skipMeal = async (idx: number) => {
+    const meal = meals[idx];
+    const newStatus: MealStatus = meal.status === 'skipped' ? 'pending' : 'skipped';
+
     setMeals((prev) =>
       prev.map((m, i) =>
-        i === idx
-          ? { ...m, status: m.status === 'skipped' ? 'pending' : 'skipped' }
-          : m,
+        i === idx ? { ...m, status: newStatus } : m,
       ),
     );
+
+    if (isAuthenticated) {
+      try {
+        const mealTypeMap: Record<string, number> = { Breakfast: 0, Lunch: 1, Snack: 2, Dinner: 3 };
+        await mealLogsApi.log({
+          date: new Date().toISOString().split('T')[0],
+          mealType: mealTypeMap[meal.type] ?? 0,
+          mealOptionId: meal.optionId,
+          status: newStatus === 'skipped' ? 2 : 0,
+        });
+      } catch { /* ignore logging errors */ }
+    }
   };
 
   // Find the first pending meal as the "active" meal
   const activeMealIdx = meals.findIndex((m) => m.status === 'pending');
 
+  // Format today's date
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthName = today.toLocaleDateString('en-US', { month: 'long' });
+  const dayNum = today.getDate();
+  const dateLabel = `${dayName}, ${monthName} ${dayNum}`;
+
+  if (loading) {
+    return (
+      <div className="py-2 flex items-center justify-center min-h-[50vh]">
+        <p className="text-on-surface-variant text-sm">Loading today's meals...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="py-2">
       {/* Date label */}
       <p className="text-on-surface-variant font-label text-sm uppercase tracking-widest mb-1">
-        Monday, May 12
+        {dateLabel}
       </p>
 
       {/* Heading */}
@@ -157,7 +245,7 @@ export function TodayPage() {
               // Expanded active meal card
               return (
                 <div
-                  key={meal.type}
+                  key={meal.type + idx}
                   className="bg-surface-container-lowest rounded-2xl overflow-hidden editorial-shadow"
                 >
                   {/* Image */}
@@ -208,7 +296,7 @@ export function TodayPage() {
             // Compact card
             return (
               <button
-                key={meal.type}
+                key={meal.type + idx}
                 onClick={() => {
                   if (isCompleted || isSkipped) {
                     // Toggle back to pending

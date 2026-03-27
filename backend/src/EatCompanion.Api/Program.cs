@@ -40,8 +40,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Services
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPdfParsingService, StubPdfParsingService>();
-builder.Services.AddScoped<IGroceryListGenerator, StubGroceryListGenerator>();
+builder.Services.AddScoped<IPdfParsingService, PdfParsingService>();
+builder.Services.AddScoped<IGroceryListGenerator, GroceryListGenerator>();
+builder.Services.AddScoped<INutritionCalculator, NutritionCalculator>();
 
 // Use case handlers
 builder.Services.AddScoped<RegisterCommandHandler>();
@@ -129,7 +130,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -30,7 +30,7 @@ public class LoginCommandHandler
             throw new Common.ValidationException("Credentials", "Invalid email or password.");
 
         var refreshToken = _tokenService.GenerateRefreshToken(user.Id);
-        user.RefreshTokens.Add(refreshToken);
+        await _userRepository.AddRefreshTokenAsync(refreshToken);
         await _unitOfWork.SaveChangesAsync();
 
         var accessToken = _tokenService.GenerateAccessToken(user);

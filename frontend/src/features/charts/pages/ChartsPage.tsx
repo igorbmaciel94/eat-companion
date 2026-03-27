@@ -9,31 +9,17 @@ import {
   Tooltip,
 } from 'recharts';
 import { Icon } from '../../../components/ui/Icon';
-
-const adherenceData = [
-  { day: 'Mon', value: 100, fill: '#9ff2e4' },
-  { day: 'Tue', value: 80, fill: '#016b61' },
-  { day: 'Wed', value: 90, fill: '#9ff2e4' },
-  { day: 'Thu', value: 70, fill: '#016b61' },
-  { day: 'Fri', value: 95, fill: '#9ff2e4' },
-  { day: 'Sat', value: 60, fill: '#016b61' },
-  { day: 'Sun', value: 85, fill: '#9ff2e4' },
-];
-
-const weightData = [
-  { day: 'Mon', weight: 73.2 },
-  { day: 'Tue', weight: 73.0 },
-  { day: 'Wed', weight: 72.8 },
-  { day: 'Thu', weight: 72.9 },
-  { day: 'Fri', weight: 72.6 },
-  { day: 'Sat', weight: 72.5 },
-  { day: 'Sun', weight: 72.4 },
-];
+import { useAnalytics } from '../hooks/useAnalytics';
 
 export function ChartsPage() {
-  const averageAdherence = Math.round(
-    adherenceData.reduce((sum, d) => sum + d.value, 0) / adherenceData.length,
-  );
+  const {
+    adherenceData,
+    weightData,
+    averageAdherence,
+    currentWeight,
+    weeklyWeightChange,
+    averageDailyCalories,
+  } = useAnalytics();
 
   return (
     <div className="py-2">
@@ -91,7 +77,7 @@ export function ChartsPage() {
           </div>
           <div className="flex items-center gap-1 bg-primary-container text-on-primary-container px-2.5 py-1 rounded-full">
             <Icon name="monitor_weight" size={14} />
-            <span className="text-xs font-medium">72.4 KG</span>
+            <span className="text-xs font-medium">{currentWeight} KG</span>
           </div>
         </div>
 
@@ -138,7 +124,7 @@ export function ChartsPage() {
             <Icon name="local_fire_department" size={18} className="text-error" />
             <span className="text-on-surface-variant text-xs font-label">Avg Calories</span>
           </div>
-          <p className="text-xl font-headline font-bold text-on-surface">1,820</p>
+          <p className="text-xl font-headline font-bold text-on-surface">{averageDailyCalories.toLocaleString()}</p>
           <p className="text-on-surface-variant text-xs">kcal / day</p>
         </div>
         <div className="bg-surface-container-lowest rounded-2xl p-4 editorial-shadow">
@@ -146,7 +132,7 @@ export function ChartsPage() {
             <Icon name="trending_down" size={18} className="text-primary" />
             <span className="text-on-surface-variant text-xs font-label">Weight Change</span>
           </div>
-          <p className="text-xl font-headline font-bold text-on-surface">-0.8</p>
+          <p className="text-xl font-headline font-bold text-on-surface">{weeklyWeightChange}</p>
           <p className="text-on-surface-variant text-xs">kg this week</p>
         </div>
       </div>

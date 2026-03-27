@@ -41,6 +41,11 @@ public class UserRepository : IUserRepository
         await _context.Users.AddAsync(user);
     }
 
+    public async Task AddRefreshTokenAsync(RefreshToken token)
+    {
+        await _context.Set<RefreshToken>().AddAsync(token);
+    }
+
     public void Update(User user)
     {
         _context.Users.Update(user);

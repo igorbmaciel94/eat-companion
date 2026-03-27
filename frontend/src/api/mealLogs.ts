@@ -1,9 +1,8 @@
 import client from './client';
-import type { MealLog } from '../types';
 
 export const mealLogsApi = {
-  log: (data: { mealPlanId: string; mealId: string; optionId: string; date: string; notes?: string }) =>
-    client.post<MealLog>('/meal-logs', data),
-  getByDate: (date: string) =>
-    client.get<MealLog[]>('/meal-logs', { params: { date } }),
+  log: (data: { date: string; mealType: number; mealOptionId?: string; status: number; notes?: string }) =>
+    client.post('/meal-logs', data),
+  getByDateRange: (startDate: string, endDate: string) =>
+    client.get('/meal-logs', { params: { startDate, endDate } }),
 };

@@ -5,6 +5,7 @@ export interface GroceryItem {
   unit: string;
   category: string;
   checked: boolean;
+  isChecked?: boolean;
   mealPlanId?: string;
 }
 

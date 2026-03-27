@@ -19,11 +19,14 @@ export interface MealOption {
   fat: number;
   prepTimeMinutes?: number;
   selected: boolean;
+  isSelected?: boolean;
+  proteinGrams?: number;
 }
 
 export interface Meal {
   id: string;
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  type: string;
+  mealType?: number;
   time?: string;
   options: MealOption[];
   selectedOptionId?: string;
@@ -62,20 +65,11 @@ export interface DailySummary {
   fatGoal: number;
 }
 
-export interface ImportResult {
-  mealPlanId: string;
-  name: string;
-  daysImported: number;
-  mealsImported: number;
-}
-
 export interface MealLog {
   id: string;
-  mealPlanId: string;
-  mealId: string;
-  optionId: string;
   date: string;
-  logged: boolean;
-  loggedAt?: string;
+  mealType: number;
+  mealOptionId?: string;
+  status: number;
   notes?: string;
 }

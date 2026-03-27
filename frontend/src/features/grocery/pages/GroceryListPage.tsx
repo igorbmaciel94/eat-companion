@@ -1,43 +1,5 @@
-import { useState } from 'react';
 import { Icon } from '../../../components/ui/Icon';
-
-interface Category {
-  name: string;
-  items: string[];
-}
-
-const mockGroceryData = {
-  totalItems: 24,
-  consolidationDays: 3,
-  dateRange: 'Oct 24 — Oct 26',
-  categories: [
-    {
-      name: 'Produce',
-      items: [
-        'Organic Baby Spinach',
-        'Avocados',
-        'Blueberries',
-        'Mixed Greens',
-        'Tomatoes',
-        'Lemons',
-        'Bananas',
-        'Berries',
-      ],
-    },
-    {
-      name: 'Protein',
-      items: ['Chicken Breast', 'Salmon Fillet', 'Eggs (dozen)', 'Greek Yogurt'],
-    },
-    {
-      name: 'Dairy',
-      items: ['Edam Cheese', 'Cottage Cheese', 'Protein Yogurt', 'Low-fat Milk'],
-    },
-    {
-      name: 'Grains',
-      items: ['Bread (whole grain)', 'Rice', 'Oat Flakes', 'Pasta', 'Corn Cakes'],
-    },
-  ] as Category[],
-};
+import { useGroceryList } from '../hooks/useGroceryList';
 
 const categoryColors: Record<string, string> = {
   Produce: 'bg-primary',
@@ -47,19 +9,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export function GroceryListPage() {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-
-  const toggleItem = (item: string) => {
-    setCheckedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(item)) {
-        next.delete(item);
-      } else {
-        next.add(item);
-      }
-      return next;
-    });
-  };
+  const { data, checkedItems, toggleItem } = useGroceryList();
 
   return (
     <div className="py-2">
@@ -70,7 +20,7 @@ export function GroceryListPage() {
       <h1 className="text-3xl font-headline font-bold tracking-tight text-on-surface mb-1">
         Grocery List
       </h1>
-      <p className="text-on-surface-variant text-sm mb-6">{mockGroceryData.dateRange}</p>
+      <p className="text-on-surface-variant text-sm mb-6">{data.dateRange}</p>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -82,7 +32,7 @@ export function GroceryListPage() {
             </span>
           </div>
           <p className="text-2xl font-headline font-bold text-on-surface">
-            {mockGroceryData.totalItems}
+            {data.totalItems}
           </p>
         </div>
         <div className="bg-surface-container-lowest rounded-2xl p-4 editorial-shadow">
@@ -93,14 +43,14 @@ export function GroceryListPage() {
             </span>
           </div>
           <p className="text-2xl font-headline font-bold text-on-surface">
-            {mockGroceryData.consolidationDays}
+            {data.consolidationDays}
           </p>
         </div>
       </div>
 
       {/* Categories */}
       <div className="space-y-6">
-        {mockGroceryData.categories.map((category) => (
+        {data.categories.map((category) => (
           <div key={category.name}>
             {/* Category header */}
             <div className="flex items-center gap-2 mb-3">
@@ -118,11 +68,11 @@ export function GroceryListPage() {
             {/* Item list */}
             <div className="space-y-0">
               {category.items.map((item) => {
-                const isChecked = checkedItems.has(item);
+                const isChecked = checkedItems.has(item.name);
                 return (
                   <button
-                    key={item}
-                    onClick={() => toggleItem(item)}
+                    key={item.id}
+                    onClick={() => toggleItem(item.name, item.id)}
                     className="w-full flex items-center gap-3 py-2.5 px-1 text-left transition-colors"
                   >
                     <div
@@ -143,7 +93,7 @@ export function GroceryListPage() {
                           : 'text-on-surface'
                       }`}
                     >
-                      {item}
+                      {item.name}
                     </span>
                   </button>
                 );
