@@ -1,8 +1,8 @@
 using EatCompanion.Application.Common;
 using EatCompanion.Application.DTOs;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 using Mapster;
 
 namespace EatCompanion.Application.UseCases.MealLogs;

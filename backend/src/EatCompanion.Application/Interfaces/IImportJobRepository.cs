@@ -1,6 +1,6 @@
 using EatCompanion.Domain.Entities;
 
-namespace EatCompanion.Domain.Interfaces;
+namespace EatCompanion.Application.Interfaces;
 
 public interface IImportJobRepository
 {

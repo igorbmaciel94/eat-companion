@@ -1,6 +1,6 @@
 using EatCompanion.Application.DTOs;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Application.UseCases.Analytics;
 

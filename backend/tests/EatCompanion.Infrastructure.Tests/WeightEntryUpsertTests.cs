@@ -1,7 +1,7 @@
 using EatCompanion.Application.Common;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Application.UseCases.WeightEntries;
 using EatCompanion.Domain.Entities;
-using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Infrastructure.Tests;
 

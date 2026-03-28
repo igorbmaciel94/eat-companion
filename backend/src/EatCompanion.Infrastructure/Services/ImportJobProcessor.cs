@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using EatCompanion.Application.Interfaces;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 using EatCompanion.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

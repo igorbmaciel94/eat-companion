@@ -1,6 +1,6 @@
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatCompanion.Infrastructure.Persistence.Repositories;

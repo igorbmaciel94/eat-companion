@@ -1,5 +1,5 @@
 using EatCompanion.Application.DTOs;
-using EatCompanion.Domain.Interfaces;
+using EatCompanion.Application.Interfaces;
 using Mapster;
 
 namespace EatCompanion.Application.UseCases.MealPlans;

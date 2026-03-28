@@ -1,7 +1,7 @@
 using EatCompanion.Application.Common;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Application.UseCases.MealPlans;
 

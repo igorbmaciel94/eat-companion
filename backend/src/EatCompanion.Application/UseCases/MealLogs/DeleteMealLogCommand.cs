@@ -1,5 +1,5 @@
 using EatCompanion.Application.Common;
-using EatCompanion.Domain.Interfaces;
+using EatCompanion.Application.Interfaces;
 
 namespace EatCompanion.Application.UseCases.MealLogs;
 
