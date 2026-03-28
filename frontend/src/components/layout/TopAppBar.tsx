@@ -1,5 +1,3 @@
-import { Icon } from '../ui/Icon';
-
 export function TopAppBar() {
   return (
     <header className="bg-surface/80 backdrop-blur-md fixed top-0 w-full z-50 shadow-sm shadow-on-surface/5">
@@ -10,9 +8,6 @@ export function TopAppBar() {
           </div>
           <h1 className="font-headline font-bold text-lg text-primary">Eat Companion</h1>
         </div>
-        <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
-          <Icon name="notifications" size={22} className="text-on-surface-variant" />
-        </button>
       </div>
     </header>
   );

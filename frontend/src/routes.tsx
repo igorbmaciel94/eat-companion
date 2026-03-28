@@ -63,7 +63,9 @@ export function AppRoutes() {
       <Route element={<RedirectIfAuth />}>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<SuspenseWrapper><LoginPage /></SuspenseWrapper>} />
-          <Route path="/register" element={<SuspenseWrapper><RegisterPage /></SuspenseWrapper>} />
+          {import.meta.env.VITE_ALLOW_REGISTRATION === 'true' && (
+            <Route path="/register" element={<SuspenseWrapper><RegisterPage /></SuspenseWrapper>} />
+          )}
         </Route>
       </Route>
 
