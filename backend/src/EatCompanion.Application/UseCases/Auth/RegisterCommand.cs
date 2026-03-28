@@ -1,7 +1,6 @@
 using EatCompanion.Application.Common;
 using EatCompanion.Application.DTOs;
 using EatCompanion.Application.Interfaces;
-using EatCompanion.Application.Interfaces;
 using EatCompanion.Domain.Entities;
 
 namespace EatCompanion.Application.UseCases.Auth;

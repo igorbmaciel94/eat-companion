@@ -3,7 +3,6 @@ using System.Threading.RateLimiting;
 using EatCompanion.Api.Middleware;
 using EatCompanion.Application.Common;
 using EatCompanion.Application.Interfaces;
-using EatCompanion.Application.Interfaces;
 using EatCompanion.Application.UseCases.Analytics;
 using EatCompanion.Application.UseCases.Auth;
 using EatCompanion.Application.UseCases.GroceryLists;
