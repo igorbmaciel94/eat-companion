@@ -1,0 +1,51 @@
+services:
+  backend:
+    image: ghcr.io/${GHCR_OWNER:-igorbmaciel94}/eatcompanion-api:${IMAGE_TAG:-main}
+    container_name: eatcompanion-api
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5001
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: Host=${DB_HOST:-host.docker.internal};Port=${DB_PORT:-5432};Database=${DB_NAME:-eatcompanion};Username=${DB_USER:-bloodwatch};Password=${DB_PASSWORD:?DB_PASSWORD is required}
+      Jwt__Secret: ${JWT_SECRET:?JWT_SECRET is required}
+      Jwt__Issuer: EatCompanion
+      Jwt__Audience: EatCompanion
+      Jwt__AccessTokenExpirationMinutes: "15"
+      Jwt__RefreshTokenExpirationDays: "7"
+      Cors__AllowedOrigins__0: https://eatcompanion.lighthousedev.uk
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
+    ports:
+      - "${API_PORT:-18085}:5001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5001/api/v1/auth/login > /dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - edge
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER:-igorbmaciel94}/eatcompanion-web:${IMAGE_TAG:-main}
+    container_name: eatcompanion-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-18084}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/index.html || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - edge
+
+networks:
+  edge:
+    driver: bridge
