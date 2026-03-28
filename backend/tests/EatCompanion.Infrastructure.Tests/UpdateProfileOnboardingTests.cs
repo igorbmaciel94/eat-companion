@@ -1,8 +1,8 @@
 using EatCompanion.Application.Common;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Application.UseCases.Profile;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 #pragma warning disable CS1998
 
 namespace EatCompanion.Infrastructure.Tests;

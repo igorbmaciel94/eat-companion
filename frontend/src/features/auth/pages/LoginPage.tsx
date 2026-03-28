@@ -53,12 +53,14 @@ export function LoginPage() {
       <Button type="submit" fullWidth size="lg" className="mt-4" disabled={loading}>
         {loading ? 'Logging in...' : 'Login'}
       </Button>
-      <p className="text-center text-sm text-on-surface-variant mt-6">
-        Don't have an account?{' '}
-        <Link to="/register" className="text-primary font-medium">
-          Register
-        </Link>
-      </p>
+      {import.meta.env.VITE_ALLOW_REGISTRATION === 'true' && (
+        <p className="text-center text-sm text-on-surface-variant mt-6">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-primary font-medium">
+            Register
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

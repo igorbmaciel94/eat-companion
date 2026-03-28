@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using AppConflictException = EatCompanion.Application.Common.ConflictException;
 using AppNotFoundException = EatCompanion.Application.Common.NotFoundException;
 using AppUnauthorizedException = EatCompanion.Application.Common.UnauthorizedException;
 using AppValidationException = EatCompanion.Application.Common.ValidationException;
@@ -48,6 +49,21 @@ public class ExceptionHandlingMiddleware
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Validation Error",
+                Detail = ex.Message
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+        }
+        catch (AppConflictException ex)
+        {
+            _logger.LogWarning(ex, "Resource conflict");
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            context.Response.ContentType = "application/problem+json";
+
+            var problemDetails = new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Conflict",
                 Detail = ex.Message
             };
 

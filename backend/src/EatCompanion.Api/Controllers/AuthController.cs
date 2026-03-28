@@ -14,24 +14,30 @@ public class AuthController : ControllerBase
     private readonly RefreshTokenCommandHandler _refreshHandler;
     private readonly IValidator<RegisterCommand> _registerValidator;
     private readonly IValidator<LoginCommand> _loginValidator;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         RegisterCommandHandler registerHandler,
         LoginCommandHandler loginHandler,
         RefreshTokenCommandHandler refreshHandler,
         IValidator<RegisterCommand> registerValidator,
-        IValidator<LoginCommand> loginValidator)
+        IValidator<LoginCommand> loginValidator,
+        IConfiguration configuration)
     {
         _registerHandler = registerHandler;
         _loginHandler = loginHandler;
         _refreshHandler = refreshHandler;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterCommand command)
     {
+        var allowRegistration = _configuration.GetValue<bool>("Features:AllowRegistration");
+        if (!allowRegistration)
+            return StatusCode(403, new { detail = "Registration is currently disabled" });
         var validation = await _registerValidator.ValidateAsync(command);
         if (!validation.IsValid)
         {

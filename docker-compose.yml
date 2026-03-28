@@ -35,6 +35,7 @@ services:
       Cors__AllowedOrigins__0: "http://localhost:3000"
       Cors__AllowedOrigins__1: "http://localhost:5173"
       Anthropic__ApiKey: "${ANTHROPIC_API_KEY}"
+      Features__AllowRegistration: "true"
     depends_on:
       postgres:
         condition: service_healthy

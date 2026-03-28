@@ -1,8 +1,8 @@
 using EatCompanion.Application.Common;
+using EatCompanion.Application.Interfaces;
 using EatCompanion.Application.UseCases.MealPlans;
 using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 
 namespace EatCompanion.Infrastructure.Tests;
 

@@ -1,11 +1,6 @@
 using System.Security.Claims;
-using System.Threading.Channels;
-using EatCompanion.Application.Common;
-using EatCompanion.Application.DTOs;
 using EatCompanion.Application.UseCases.MealPlans;
-using EatCompanion.Domain.Entities;
 using EatCompanion.Domain.Enums;
-using EatCompanion.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,9 +24,8 @@ public class MealPlansController : ControllerBase
     private readonly AddIngredientCommandHandler _addIngredientHandler;
     private readonly UpdateIngredientCommandHandler _updateIngredientHandler;
     private readonly DeleteIngredientCommandHandler _deleteIngredientHandler;
-    private readonly IImportJobRepository _importJobRepo;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly Channel<Guid> _importChannel;
+    private readonly EnqueueImportCommandHandler _enqueueImportHandler;
+    private readonly GetImportStatusQueryHandler _getImportStatusHandler;
 
     public MealPlansController(
         GetMealPlansQueryHandler getMealPlansHandler,
@@ -43,9 +37,8 @@ public class MealPlansController : ControllerBase
         AddIngredientCommandHandler addIngredientHandler,
         UpdateIngredientCommandHandler updateIngredientHandler,
         DeleteIngredientCommandHandler deleteIngredientHandler,
-        IImportJobRepository importJobRepo,
-        IUnitOfWork unitOfWork,
-        Channel<Guid> importChannel)
+        EnqueueImportCommandHandler enqueueImportHandler,
+        GetImportStatusQueryHandler getImportStatusHandler)
     {
         _getMealPlansHandler = getMealPlansHandler;
         _getMealPlanHandler = getMealPlanHandler;
@@ -56,9 +49,8 @@ public class MealPlansController : ControllerBase
         _addIngredientHandler = addIngredientHandler;
         _updateIngredientHandler = updateIngredientHandler;
         _deleteIngredientHandler = deleteIngredientHandler;
-        _importJobRepo = importJobRepo;
-        _unitOfWork = unitOfWork;
-        _importChannel = importChannel;
+        _enqueueImportHandler = enqueueImportHandler;
+        _getImportStatusHandler = getImportStatusHandler;
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
@@ -69,48 +61,19 @@ public class MealPlansController : ControllerBase
         if (file is null || file.Length == 0)
             return BadRequest("A PDF file is required.");
 
-        // Check for existing pending import
-        var pending = await _importJobRepo.GetPendingByUserAsync(GetUserId());
-        if (pending is not null)
-            return Conflict(new { message = "An import is already in progress.", jobId = pending.Id });
+        await using var stream = file.OpenReadStream();
+        var jobId = await _enqueueImportHandler.Handle(
+            new EnqueueImportCommand(stream, file.FileName, GetUserId()));
 
-        // Save PDF to temp file
-        var tempDir = Path.Combine(Path.GetTempPath(), "eatcompanion-imports");
-        Directory.CreateDirectory(tempDir);
-        var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}.pdf");
-        await using (var fs = System.IO.File.Create(tempPath))
-        {
-            await file.CopyToAsync(fs);
-        }
-
-        // Create import job
-        var job = new ImportJob
-        {
-            Id = Guid.NewGuid(),
-            UserId = GetUserId(),
-            FileName = file.FileName,
-            TempFilePath = tempPath,
-            Status = ImportJobStatus.Pending,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _importJobRepo.AddAsync(job);
-        await _unitOfWork.SaveChangesAsync();
-
-        // Enqueue for background processing
-        await _importChannel.Writer.WriteAsync(job.Id);
-
-        return Accepted(new { jobId = job.Id });
+        return Accepted(new { jobId });
     }
 
     [HttpGet("import/{jobId:guid}/status")]
     public async Task<IActionResult> GetImportStatus(Guid jobId)
     {
-        var job = await _importJobRepo.GetByIdAsync(jobId);
-        if (job is null || job.UserId != GetUserId())
-            return NotFound();
-
-        return Ok(new ImportJobStatusDto(job.Id, job.Status, job.MealPlanId, job.ErrorMessage));
+        var result = await _getImportStatusHandler.Handle(
+            new GetImportStatusQuery(jobId, GetUserId()));
+        return Ok(result);
     }
 
     [HttpGet]

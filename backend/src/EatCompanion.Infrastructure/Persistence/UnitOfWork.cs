@@ -1,4 +1,4 @@
-using EatCompanion.Application.Common;
+using EatCompanion.Application.Interfaces;
 
 namespace EatCompanion.Infrastructure.Persistence;
 

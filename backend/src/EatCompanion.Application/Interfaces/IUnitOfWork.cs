@@ -1,4 +1,4 @@
-namespace EatCompanion.Application.Common;
+namespace EatCompanion.Application.Interfaces;
 
 public interface IUnitOfWork
 {
