@@ -13,8 +13,8 @@ services:
       Jwt__Secret: ${JWT_SECRET:?JWT_SECRET is required}
       Jwt__Issuer: EatCompanion
       Jwt__Audience: EatCompanion
-      Jwt__AccessTokenExpirationMinutes: "15"
-      Jwt__RefreshTokenExpirationDays: "7"
+      Jwt__AccessTokenExpirationMinutes: "1440"
+      Jwt__RefreshTokenExpirationDays: "90"
       Cors__AllowedOrigins__0: https://eatcompanion.lighthousedev.uk
       Anthropic__ApiKey: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
       Features__AllowRegistration: "${ALLOW_REGISTRATION:-false}"
