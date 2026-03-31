@@ -14,8 +14,8 @@ export function BodyMeasurementsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const heightVal = parseFloat(height);
-    const weightVal = parseFloat(weight);
+    const heightVal = parseFloat(height.replace(',', '.'));
+    const weightVal = parseFloat(weight.replace(',', '.'));
 
     setLoading(true);
     try {
@@ -59,11 +59,9 @@ export function BodyMeasurementsPage() {
                 <Icon name="straighten" size={20} className="text-on-surface-variant" />
               </div>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.1"
-                min="100"
-                max="250"
+                pattern="[0-9]*[.,]?[0-9]*"
                 placeholder="e.g. 175"
                 value={height}
                 onChange={(e) => setHeight(e.target.value)}
@@ -84,12 +82,10 @@ export function BodyMeasurementsPage() {
                 <Icon name="monitor_weight" size={20} className="text-on-surface-variant" />
               </div>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.1"
-                min="30"
-                max="300"
-                placeholder="e.g. 75.5"
+                pattern="[0-9]*[.,]?[0-9]*"
+                placeholder="e.g. 75,5"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 className="w-full rounded-[0.75rem] border border-outline-variant pl-10 pr-12 py-3 text-sm text-on-surface bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"

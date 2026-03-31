@@ -8,6 +8,15 @@
   }
 }
 
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 @layer utilities {
   .editorial-shadow {
     box-shadow: 0 12px 32px rgba(42, 52, 50, 0.06);

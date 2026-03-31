@@ -58,8 +58,8 @@ export function ProfilePage() {
     setSaving(true);
     try {
       const updates: { heightCm?: number; weightKg?: number } = {};
-      const h = parseFloat(heightInput);
-      const w = parseFloat(weightInput);
+      const h = parseFloat(heightInput.replace(',', '.'));
+      const w = parseFloat(weightInput.replace(',', '.'));
       if (h > 0) updates.heightCm = h;
       if (w > 0) updates.weightKg = w;
       if (Object.keys(updates).length > 0) {
@@ -290,9 +290,9 @@ export function ProfilePage() {
                   <div className="flex-1">
                     <label className="block text-xs text-on-surface-variant mb-1">Height (cm)</label>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
-                      step="0.1"
+                      pattern="[0-9]*[.,]?[0-9]*"
                       placeholder="175"
                       value={heightInput}
                       onChange={(e) => setHeightInput(e.target.value)}
@@ -302,10 +302,10 @@ export function ProfilePage() {
                   <div className="flex-1">
                     <label className="block text-xs text-on-surface-variant mb-1">Weight (kg)</label>
                     <input
-                      type="number"
+                      type="text"
                       inputMode="decimal"
-                      step="0.1"
-                      placeholder="75.5"
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      placeholder="75,5"
                       value={weightInput}
                       onChange={(e) => setWeightInput(e.target.value)}
                       className="w-full bg-surface-container-low rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
