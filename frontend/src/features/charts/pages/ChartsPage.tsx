@@ -33,7 +33,7 @@ export function ChartsPage() {
   const [saving, setSaving] = useState(false);
 
   const handleLogWeight = async () => {
-    const val = parseFloat(weightInput);
+    const val = parseFloat(weightInput.replace(',', '.'));
     if (!val || val < 20 || val > 400 || saving) return;
     setSaving(true);
     try {
@@ -75,10 +75,10 @@ export function ChartsPage() {
           <div className="mt-4 w-full max-w-xs">
             <div className="flex gap-2">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.1"
-                placeholder="75.5"
+                pattern="[0-9]*[.,]?[0-9]*"
+                placeholder="75,5"
                 value={weightInput}
                 onChange={(e) => setWeightInput(e.target.value)}
                 className="flex-1 bg-surface-container-lowest rounded-xl border border-outline-variant px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
@@ -204,10 +204,10 @@ export function ChartsPage() {
           {showWeightForm ? (
             <div className="flex gap-2">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.1"
-                placeholder="75.5 kg"
+                pattern="[0-9]*[.,]?[0-9]*"
+                placeholder="75,5 kg"
                 value={weightInput}
                 onChange={(e) => setWeightInput(e.target.value)}
                 className="flex-1 bg-surface-container-low rounded-xl px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 outline-none focus:ring-2 focus:ring-primary/30"
